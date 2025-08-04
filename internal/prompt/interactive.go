@@ -25,7 +25,7 @@ func New() *InteractivePrompt {
 func (p *InteractivePrompt) PromptForMessage(suggestedMessage string) (string, error) {
 	for {
 		fmt.Print("Accept this message? (y/n/e to edit): ")
-		
+
 		input, err := p.reader.ReadString('\n')
 		if err != nil {
 			return "", fmt.Errorf("failed to read input: %w", err)
