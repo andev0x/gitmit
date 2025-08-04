@@ -2,7 +2,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gitmit/gitmit)](https://goreportcard.com/report/github.com/gitmit/gitmit)
+[![Go Report Card](https://goreportcard.com/badge/github.com/andev0x/gitmit)](https://goreportcard.com/report/github.com/andev0x/gitmit)
 
 A lightweight CLI tool that analyzes your staged changes and suggests professional commit messages following the Conventional Commits format — without relying on AI.
 
@@ -27,13 +27,13 @@ With **Gitmit**, just focus on the code — and let the tool suggest clean, read
 ### Using Go Install (Recommended)
 
 ```bash
-go install github.com/gitmit/gitmit@latest
+go install github.com/andev0x/gitmit@latest
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/gitmit/gitmit.git
+git clone https://github.com/andev0x/gitmit.git
 cd gitmit
 go build -o gitmit
 sudo mv gitmit /usr/local/bin/
@@ -41,7 +41,7 @@ sudo mv gitmit /usr/local/bin/
 
 ### Binary Releases
 
-Download the latest binary from the [releases page](https://github.com/gitmit/gitmit/releases).
+Download the latest binary from the [releases page](https://github.com/andev0x/gitmit/releases).
 
 ## 📖 Usage
 
@@ -56,10 +56,10 @@ gitmit
 
 # Interactive prompts will guide you:
 # 🧠 Gitmit - Smart Git Commit
-# 
+#
 # 💡 Suggested commit message:
 #    feat(api): add user authentication endpoint
-# 
+#
 # Accept this message? (y/n/e to edit):
 ```
 
@@ -155,7 +155,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Clone the repository
-git clone https://github.com/gitmit/gitmit.git
+git clone https://github.com/andev0x/gitmit.git
 cd gitmit
 
 # Install dependencies

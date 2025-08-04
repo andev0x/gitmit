@@ -1,4 +1,4 @@
-module github.com/gitmit/gitmit
+module github.com/andev0x/gitmit
 
 go 1.21
 

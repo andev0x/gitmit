@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	"github.com/gitmit/gitmit/internal/analyzer"
-	"github.com/gitmit/gitmit/internal/generator"
-	"github.com/gitmit/gitmit/internal/prompt"
+	"github.com/andev0x/gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/internal/generator"
+	"github.com/andev0x/gitmit/internal/prompt"
 	"github.com/spf13/cobra"
 )
 

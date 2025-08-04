@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gitmit/gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/internal/analyzer"
 )
 
 // MessageGenerator generates conventional commit messages
@@ -74,8 +74,8 @@ func (m *MessageGenerator) determineCommitType(analysis *analyzer.ChangeAnalysis
 	// Check diff hints for specific patterns
 	for _, hint := range analysis.DiffHints {
 		lowerHint := strings.ToLower(hint)
-		if strings.Contains(lowerHint, "fix") || strings.Contains(lowerHint, "bug") || 
-		   strings.Contains(lowerHint, "error") || strings.Contains(lowerHint, "patch") {
+		if strings.Contains(lowerHint, "fix") || strings.Contains(lowerHint, "bug") ||
+			strings.Contains(lowerHint, "error") || strings.Contains(lowerHint, "patch") {
 			return Fix
 		}
 		if strings.Contains(lowerHint, "performance") || strings.Contains(lowerHint, "optimize") {
@@ -206,3 +206,4 @@ func (m *MessageGenerator) generateDescription(analysis *analyzer.ChangeAnalysis
 func (m *MessageGenerator) getFileName(filePath string) string {
 	return filepath.Base(filePath)
 }
+

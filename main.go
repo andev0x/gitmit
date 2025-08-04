@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gitmit/gitmit/cmd"
+	"github.com/andev0x/gitmit/cmd"
 )
 
 func main() {
@@ -13,3 +13,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+
