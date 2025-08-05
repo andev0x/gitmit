@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/fatih/color"
 	"github.com/andev0x/gitmit/internal/analyzer"
 	"github.com/andev0x/gitmit/internal/generator"
 	"github.com/andev0x/gitmit/internal/prompt"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 

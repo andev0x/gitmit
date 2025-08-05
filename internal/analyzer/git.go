@@ -49,21 +49,21 @@ func (g *GitAnalyzer) GetStagedChanges() ([]FileChange, error) {
 
 	var changes []FileChange
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-		
+
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {
 			continue
 		}
-		
+
 		status := parts[0]
 		filePath := parts[1]
-		
+
 		changes = append(changes, FileChange{
 			Status:   status,
 			FilePath: filePath,
@@ -90,7 +90,7 @@ func (g *GitAnalyzer) AnalyzeChanges(changes []FileChange) (*ChangeAnalysis, err
 	for _, change := range changes {
 		// Categorize file operations
 		g.categorizeChange(change, analysis)
-		
+
 		// Extract file information
 		g.extractFileInfo(change.FilePath, analysis, scopeSet)
 	}
@@ -145,7 +145,7 @@ func (g *GitAnalyzer) extractFileInfo(filePath string, analysis *ChangeAnalysis,
 
 	// Special file patterns for scope detection
 	lowerPath := strings.ToLower(filePath)
-	
+
 	if strings.Contains(lowerPath, "test") || strings.Contains(lowerPath, "spec") {
 		scopeSet["test"] = true
 	}
@@ -155,7 +155,7 @@ func (g *GitAnalyzer) extractFileInfo(filePath string, analysis *ChangeAnalysis,
 	if strings.Contains(lowerPath, "config") || strings.Contains(lowerPath, ".config") {
 		scopeSet["config"] = true
 	}
-	
+
 	// Package management files
 	packageFiles := []string{"package.json", "go.mod", "requirements.txt", "Cargo.toml", "pom.xml"}
 	for _, pkgFile := range packageFiles {
@@ -179,16 +179,16 @@ func (g *GitAnalyzer) extractDiffHints() ([]string, error) {
 
 	// Define patterns for common code changes
 	patterns := map[string]*regexp.Regexp{
-		"added logging":     regexp.MustCompile(`\+.*(?:console\.log|fmt\.Print|log\.|logger\.|Logger)`),
-		"added functions":   regexp.MustCompile(`\+.*(?:func |function |def |const .* = |let .* = )`),
-		"updated imports":   regexp.MustCompile(`\+.*(?:import |require\(|#include|use )`),
-		"updated exports":   regexp.MustCompile(`\+.*(?:export |module\.exports)`),
-		"added todos":       regexp.MustCompile(`\+.*(?:TODO|FIXME|XXX|HACK)`),
-		"async operations":  regexp.MustCompile(`\+.*(?:async |await |Promise|goroutine|threading)`),
-		"class changes":     regexp.MustCompile(`\+.*(?:class |struct |interface |type .*struct)`),
-		"error handling":    regexp.MustCompile(`\+.*(?:try|catch|except|panic|recover|error|Error)`),
-		"database changes":  regexp.MustCompile(`\+.*(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE|ALTER TABLE)`),
-		"api endpoints":     regexp.MustCompile(`\+.*(?:@RequestMapping|@GetMapping|@PostMapping|router\.|app\.|http\.)`),
+		"added logging":    regexp.MustCompile(`\+.*(?:console\.log|fmt\.Print|log\.|logger\.|Logger)`),
+		"added functions":  regexp.MustCompile(`\+.*(?:func |function |def |const .* = |let .* = )`),
+		"updated imports":  regexp.MustCompile(`\+.*(?:import |require\(|#include|use )`),
+		"updated exports":  regexp.MustCompile(`\+.*(?:export |module\.exports)`),
+		"added todos":      regexp.MustCompile(`\+.*(?:TODO|FIXME|XXX|HACK)`),
+		"async operations": regexp.MustCompile(`\+.*(?:async |await |Promise|goroutine|threading)`),
+		"class changes":    regexp.MustCompile(`\+.*(?:class |struct |interface |type .*struct)`),
+		"error handling":   regexp.MustCompile(`\+.*(?:try|catch|except|panic|recover|error|Error)`),
+		"database changes": regexp.MustCompile(`\+.*(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE|ALTER TABLE)`),
+		"api endpoints":    regexp.MustCompile(`\+.*(?:@RequestMapping|@GetMapping|@PostMapping|router\.|app\.|http\.)`),
 	}
 
 	for hint, pattern := range patterns {

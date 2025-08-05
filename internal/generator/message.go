@@ -206,4 +206,3 @@ func (m *MessageGenerator) generateDescription(analysis *analyzer.ChangeAnalysis
 func (m *MessageGenerator) getFileName(filePath string) string {
 	return filepath.Base(filePath)
 }
-

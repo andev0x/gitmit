@@ -48,7 +48,7 @@ lint:
 .PHONY: fmt
 fmt:
 	@echo "Formatting code..."
-	go fmt ./...
+		go fmt -s ./...
 
 # Vet code
 .PHONY: vet
