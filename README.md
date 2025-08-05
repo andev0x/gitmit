@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/p1.png" alt="Capytrace Logo" width="600"/>
+  <img src="assets/p1.png" alt="Gitmit" width="600"/>
 
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
