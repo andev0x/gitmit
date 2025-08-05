@@ -50,43 +50,66 @@ func (m *MessageGenerator) GenerateMessage(analysis *analyzer.ChangeAnalysis) st
 
 // determineCommitType analyzes changes to determine the appropriate commit type
 func (m *MessageGenerator) determineCommitType(analysis *analyzer.ChangeAnalysis) CommitType {
-	// Check for specific scopes first
+	if commitType, ok := m.determineCommitTypeFromScopes(analysis); ok {
+		return commitType
+	}
+	if commitType, ok := m.determineCommitTypeFromFileTypes(analysis); ok {
+		return commitType
+	}
+	if commitType, ok := m.determineCommitTypeFromDiffHints(analysis); ok {
+		return commitType
+	}
+	if commitType, ok := m.determineCommitTypeFromFileOps(analysis); ok {
+		return commitType
+	}
+
+	// Default fallback
+	return Chore
+}
+
+func (m *MessageGenerator) determineCommitTypeFromScopes(analysis *analyzer.ChangeAnalysis) (CommitType, bool) {
 	for _, scope := range analysis.Scopes {
 		switch scope {
 		case "test":
-			return Test
+			return Test, true
 		case "docs":
-			return Docs
+			return Docs, true
 		case "deps":
-			return Chore
+			return Chore, true
 		case "ci", ".github", ".gitlab":
-			return CI
+			return CI, true
 		case "build", "webpack", "rollup", "vite":
-			return Build
+			return Build, true
 		}
 	}
+	return "", false
+}
 
-	// Check file types for documentation
+func (m *MessageGenerator) determineCommitTypeFromFileTypes(analysis *analyzer.ChangeAnalysis) (CommitType, bool) {
 	if analysis.FileTypes["md"] > 0 || analysis.FileTypes["txt"] > 0 || analysis.FileTypes["rst"] > 0 {
-		return Docs
+		return Docs, true
 	}
+	return "", false
+}
 
-	// Check diff hints for specific patterns
+func (m *MessageGenerator) determineCommitTypeFromDiffHints(analysis *analyzer.ChangeAnalysis) (CommitType, bool) {
 	for _, hint := range analysis.DiffHints {
 		lowerHint := strings.ToLower(hint)
 		if strings.Contains(lowerHint, "fix") || strings.Contains(lowerHint, "bug") ||
 			strings.Contains(lowerHint, "error") || strings.Contains(lowerHint, "patch") {
-			return Fix
+			return Fix, true
 		}
 		if strings.Contains(lowerHint, "performance") || strings.Contains(lowerHint, "optimize") {
-			return Perf
+			return Perf, true
 		}
 		if strings.Contains(lowerHint, "style") || strings.Contains(lowerHint, "format") {
-			return Style
+			return Style, true
 		}
 	}
+	return "", false
+}
 
-	// Analyze file operations
+func (m *MessageGenerator) determineCommitTypeFromFileOps(analysis *analyzer.ChangeAnalysis) (CommitType, bool) {
 	hasAdded := len(analysis.Added) > 0
 	hasModified := len(analysis.Modified) > 0
 	hasDeleted := len(analysis.Deleted) > 0
@@ -94,27 +117,26 @@ func (m *MessageGenerator) determineCommitType(analysis *analyzer.ChangeAnalysis
 
 	// New features (primarily new files with minimal modifications)
 	if hasAdded && !hasModified && !hasDeleted {
-		return Feat
+		return Feat, true
 	}
 
 	// Refactoring (renames or structural changes)
 	if hasRenamed || (hasModified && hasDeleted && !hasAdded) {
-		return Refactor
+		return Refactor, true
 	}
 
 	// Modifications to existing files (could be features or fixes)
 	if hasModified {
 		// Default to feat for positive changes unless hints suggest otherwise
-		return Feat
+		return Feat, true
 	}
 
 	// Pure deletions
 	if hasDeleted && !hasAdded && !hasModified {
-		return Chore
+		return Chore, true
 	}
 
-	// Default fallback
-	return Chore
+	return "", false
 }
 
 // determineScope determines the most appropriate scope for the commit
