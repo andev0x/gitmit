@@ -24,7 +24,7 @@ func New() *InteractivePrompt {
 // PromptForMessage prompts the user to accept, reject, or edit the suggested message
 func (p *InteractivePrompt) PromptForMessage(suggestedMessage string) (string, error) {
 	for {
-		fmt.Print("Accept this message? (y/n/e to edit): ")
+		fmt.Print("Accept this message? (y/n/e to edit/r to regenerate): ")
 
 		input, err := p.reader.ReadString('\n')
 		if err != nil {
@@ -40,11 +40,14 @@ func (p *InteractivePrompt) PromptForMessage(suggestedMessage string) (string, e
 			return "", nil
 		case "e", "edit":
 			return p.promptForEdit(suggestedMessage)
+		case "r", "regenerate":
+			return "regenerate", nil
 		default:
-			color.Yellow("Please enter 'y' (yes), 'n' (no), or 'e' (edit)")
+			color.Yellow("Please enter 'y' (yes), 'n' (no), 'e' (edit), or 'r' (regenerate)")
 		}
 	}
 }
+
 
 // promptForEdit allows the user to enter a custom commit message
 func (p *InteractivePrompt) promptForEdit(originalMessage string) (string, error) {
