@@ -3,15 +3,16 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
+
 	"github.com/andev0x/gitmit/internal/analyzer"
 	"github.com/andev0x/gitmit/internal/generator"
 	"github.com/andev0x/gitmit/internal/prompt"
-	"github.com/fatih/color"
-	"github.com/spf13/cobra"
 )
 
 var (
-	version = "1.0.0"
+	version = "0.0.4"
 
 	rootCmd = &cobra.Command{
 		Use:   "gitmit",
