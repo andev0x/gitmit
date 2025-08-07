@@ -85,28 +85,40 @@ func runGitmit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Generate suggested message
-	suggestedMessage := msgGenerator.GenerateMessage(changeAnalysis)
-
 	// Display analysis if verbose
 	if verbose {
 		displayAnalysis(changeAnalysis)
 	}
 
-	// Show suggested message
-	color.Green("\n💡 Suggested commit message:")
-	color.White("   %s\n", suggestedMessage)
+	var finalMessage string
+	for {
+		// Generate suggested message
+		suggestedMessage := msgGenerator.GenerateMessage(changeAnalysis)
 
-	// Handle dry-run mode
-	if dryRun {
-		color.Cyan("🔍 Dry-run mode: No commit will be made")
-		return nil
-	}
+		// Show suggested message
+		color.Green("\n💡 Suggested commit message:")
+		color.White("   %s\n", suggestedMessage)
 
-	// Interactive prompt
-	finalMessage, err := interactivePrompt.PromptForMessage(suggestedMessage)
-	if err != nil {
-		return err
+		// Handle dry-run mode
+		if dryRun {
+			color.Cyan("🔍 Dry-run mode: No commit will be made")
+			return nil
+		}
+
+		// Interactive prompt
+		message, err := interactivePrompt.PromptForMessage(suggestedMessage)
+		if err != nil {
+			return err
+		}
+
+		if message == "regenerate" {
+			color.Yellow("Regenerating commit message...")
+			fmt.Println()
+			continue
+		}
+
+		finalMessage = message
+		break
 	}
 
 	if finalMessage == "" {
