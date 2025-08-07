@@ -38,6 +38,10 @@ gitmit
 dist/
 build/
 
+# Env
+.env
+
+
 # Temporary files
 *.tmp
 *.temp
