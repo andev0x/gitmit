@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/andev0x/gitmit/internal/llm"
+	"github.com/andev0x/gitmit/internal/prompt"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ func init() {
 }
 
 func runPropose(cmd *cobra.Command, args []string) error {
-	bytes, err := ioutil.ReadAll(os.Stdin)
+	bytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}
@@ -31,12 +32,23 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("diff is empty")
 	}
 
-	commit, err := llm.ProposeCommit(cmd.Context(), diff)
+	initialMessage, err := llm.ProposeCommit(cmd.Context(), diff)
 	if err != nil {
 		return err
 	}
 
-	color.Green(commit)
+	color.Green(initialMessage)
+
+	p := prompt.New()
+	finalMessage, err := p.PromptForMessage(initialMessage, diff)
+	if err != nil {
+		return err
+	}
+
+	if finalMessage != "" {
+		fmt.Println("\nFinal commit message:")
+		color.Green(finalMessage)
+	}
 
 	return nil
 }

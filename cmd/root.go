@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	version = "0.0.4"
+	version = "0.0.5"
 
 	rootCmd = &cobra.Command{
 		Use:   "gitmit",
@@ -47,7 +47,9 @@ func Execute() error {
 func runGitmit(cmd *cobra.Command, args []string) error {
 	// Print header
 	cyan := color.New(color.FgCyan, color.Bold)
-	cyan.Println("🧠 Gitmit - Smart Git Commit")
+	if _, err := cyan.Println("🧠 Gitmit - Smart Git Commit"); err != nil {
+		return err
+	}
 	fmt.Println()
 
 	// Initialize components
@@ -90,50 +92,48 @@ func runGitmit(cmd *cobra.Command, args []string) error {
 		displayAnalysis(changeAnalysis)
 	}
 
-	var finalMessage string
-	for {
-		// Generate suggested message
-		suggestedMessage := msgGenerator.GenerateMessage(changeAnalysis)
+	// Generate suggested message
+	suggestedMessage := msgGenerator.GenerateMessage(changeAnalysis)
 
-		// Show suggested message
-		color.Green("\n💡 Suggested commit message:")
-		color.White("   %s\n", suggestedMessage)
+	// Show suggested message
+	color.Green("\n💡 Suggested commit message:")
+	color.White("   %s\n", suggestedMessage)
 
-		// Handle dry-run mode
-		if dryRun {
-			color.Cyan("🔍 Dry-run mode: No commit will be made")
-			return nil
-		}
-
-		// Interactive prompt
-		message, err := interactivePrompt.PromptForMessage(suggestedMessage)
-		if err != nil {
-			return err
-		}
-
-		if message == "regenerate" {
-			color.Yellow("Regenerating commit message...")
-			fmt.Println()
-			continue
-		}
-
-		finalMessage = message
-		break
-	}
-
-	if finalMessage == "" {
-		color.Yellow("🚫 Commit cancelled")
+	// Handle dry-run mode
+	if dryRun {
+		color.Cyan("🔍 Dry-run mode: No commit will be made")
 		return nil
 	}
 
-	// Commit with the final message
-	if err := gitAnalyzer.Commit(finalMessage); err != nil {
-		color.Red("❌ Failed to commit: %v", err)
-		return err
+	// Interactive prompt
+	for {
+		stagedDiff, err := gitAnalyzer.GetStagedDiff()
+		if err != nil {
+			color.Red("❌ Failed to get staged diff: %v", err)
+			return err
+		}
+		message, err := interactivePrompt.PromptForMessage(suggestedMessage, stagedDiff)
+		if err != nil {
+			return err
+		}
+		if message == "__regenerate__" {
+			// Locally regenerate the commit message
+			suggestedMessage = msgGenerator.GenerateMessage(changeAnalysis)
+			continue
+		}
+		finalMessage := message
+		if finalMessage == "" {
+			color.Yellow("🚫 Commit cancelled")
+			return nil
+		}
+		// Commit with the final message
+		if err := gitAnalyzer.Commit(finalMessage); err != nil {
+			color.Red("❌ Failed to commit: %v", err)
+			return err
+		}
+		color.Green("✅ Committed: %s", finalMessage)
+		return nil
 	}
-
-	color.Green("✅ Committed: %s", finalMessage)
-	return nil
 }
 
 func displayAnalysis(analysis *analyzer.ChangeAnalysis) {

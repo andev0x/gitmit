@@ -166,6 +166,16 @@ func (g *GitAnalyzer) extractFileInfo(filePath string, analysis *ChangeAnalysis,
 	}
 }
 
+// GetStagedDiff retrieves the diff of all staged changes
+func (g *GitAnalyzer) GetStagedDiff() (string, error) {
+	cmd := exec.Command("git", "diff", "--cached")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
+}
+
 // extractDiffHints analyzes git diff output for contextual hints
 func (g *GitAnalyzer) extractDiffHints() ([]string, error) {
 	cmd := exec.Command("git", "diff", "--cached", "--no-color")
