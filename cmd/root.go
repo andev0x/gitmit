@@ -31,13 +31,15 @@ Features:
 		RunE:    runGitmit,
 	}
 
-	dryRun  bool
-	verbose bool
+	dryRun    bool
+	verbose   bool
+	useOpenAI bool
 )
 
 func init() {
 	rootCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "Show suggested message without committing")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show detailed analysis")
+	rootCmd.Flags().BoolVarP(&useOpenAI, "openai", "o", false, "Use OpenAI API for commit message generation")
 }
 
 func Execute() error {
@@ -54,8 +56,20 @@ func runGitmit(cmd *cobra.Command, args []string) error {
 
 	// Initialize components
 	gitAnalyzer := analyzer.New()
-	msgGenerator := generator.New()
-	interactivePrompt := prompt.New()
+
+	var openAIAPIKey string
+	if useOpenAI {
+		// Temporarily create a prompt instance to get the key
+		tempPrompt := prompt.New("") // Pass empty string for now
+		key, err := tempPrompt.PromptForOpenAIKey()
+		if err != nil {
+			return err
+		}
+		openAIAPIKey = key
+	}
+
+	interactivePrompt := prompt.New(openAIAPIKey)
+	msgGenerator := generator.New(openAIAPIKey)
 
 	// Check if we're in a git repository
 	if !gitAnalyzer.IsGitRepository() {

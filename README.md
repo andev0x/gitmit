@@ -41,7 +41,7 @@ sudo mv gitmit /usr/local/bin/
 
 ### Getting an OpenAI API Key :))
 
-1. Visit the OpenAI website at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys).
+1. Visit the OpenAI website at [OpenAI](https://platform.openai.com/account/api-keys).
 2. If you don't have an account, click on "Sign Up" to create one. If you do, click "Log In".
 3. Once logged in, navigate to your API key management page.
 4. Click on "Create new secret key".

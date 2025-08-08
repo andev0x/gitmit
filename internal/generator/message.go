@@ -9,7 +9,9 @@ import (
 )
 
 // MessageGenerator generates conventional commit messages
-type MessageGenerator struct{}
+type MessageGenerator struct{
+	openAIAPIKey string
+}
 
 // CommitType represents different types of commits
 type CommitType string
@@ -28,8 +30,10 @@ const (
 )
 
 // New creates a new MessageGenerator instance
-func New() *MessageGenerator {
-	return &MessageGenerator{}
+func New(openAIAPIKey string) *MessageGenerator {
+	return &MessageGenerator{
+		openAIAPIKey: openAIAPIKey,
+	}
 }
 
 // GenerateMessage generates a conventional commit message based on analysis

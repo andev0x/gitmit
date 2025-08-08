@@ -32,14 +32,25 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("diff is empty")
 	}
 
-	initialMessage, err := llm.ProposeCommit(cmd.Context(), diff)
+	var openAIAPIKey string
+	if useOpenAI {
+		// Temporarily create a prompt instance to get the key
+		tempPrompt := prompt.New("") // Pass empty string for now
+		key, err := tempPrompt.PromptForOpenAIKey()
+		if err != nil {
+			return err
+		}
+		openAIAPIKey = key
+	}
+
+	initialMessage, err := llm.ProposeCommit(cmd.Context(), openAIAPIKey, diff)
 	if err != nil {
 		return err
 	}
 
 	color.Green(initialMessage)
 
-	p := prompt.New()
+	p := prompt.New(openAIAPIKey)
 	finalMessage, err := p.PromptForMessage(initialMessage, diff)
 	if err != nil {
 		return err
