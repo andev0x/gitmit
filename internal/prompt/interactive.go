@@ -94,10 +94,19 @@ func (p *InteractivePrompt) promptForRegenerate(diff string) (string, error) {
 	if err != nil {
 		if strings.Contains(err.Error(), "OPENAI_API_KEY not set") {
 			color.Red("Error: OpenAI API Key is not set. Please provide a valid key.")
-			// Optionally, prompt for the key again or guide the user
-			return "", fmt.Errorf("OpenAI API Key not configured")
+			newKey, keyErr := p.PromptForOpenAIKey()
+			if keyErr != nil {
+				return "", keyErr
+			}
+			p.openAIAPIKey = newKey
+			// Retry proposing the commit with the new key
+			newMessage, err = llm.ProposeCommit(context.Background(), p.openAIAPIKey, diff)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			return "", err
 		}
-		return "", err
 	}
 	color.Green(newMessage)
 	return p.PromptForMessage(newMessage, diff)
