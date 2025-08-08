@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/andev0x/gitmit/internal/llm"
+	"github.com/andev0x/gitmit/internal/prompt"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ func init() {
 }
 
 func runPropose(cmd *cobra.Command, args []string) error {
-	bytes, err := ioutil.ReadAll(os.Stdin)
+	bytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}
@@ -31,12 +32,34 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("diff is empty")
 	}
 
-	commit, err := llm.ProposeCommit(cmd.Context(), diff)
+	var openAIAPIKey string
+	if useOpenAI {
+		// Temporarily create a prompt instance to get the key
+		tempPrompt := prompt.New("") // Pass empty string for now
+		key, err := tempPrompt.PromptForOpenAIKey()
+		if err != nil {
+			return err
+		}
+		openAIAPIKey = key
+	}
+
+	initialMessage, err := llm.ProposeCommit(cmd.Context(), openAIAPIKey, diff)
 	if err != nil {
 		return err
 	}
 
-	color.Green(commit)
+	color.Green(initialMessage)
+
+	p := prompt.New(openAIAPIKey)
+	finalMessage, err := p.PromptForMessage(initialMessage, diff)
+	if err != nil {
+		return err
+	}
+
+	if finalMessage != "" {
+		fmt.Println("\nFinal commit message:")
+		color.Green(finalMessage)
+	}
 
 	return nil
 }
