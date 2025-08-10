@@ -26,8 +26,8 @@ func ProposeCommit(ctx context.Context, openAIAPIKey, diff string) (string, erro
 	fmt.Printf("Using OpenAI API Key (first 5 chars): %s*****\n", key[:5])
 	client := openai.NewClient(key)
 
-	maxRetries := 5
-	baseDelay := 1 * time.Second
+	maxRetries := 10
+	baseDelay := 2 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
 		resp, err := client.CreateChatCompletion(
