@@ -9,7 +9,7 @@ import (
 )
 
 // MessageGenerator generates conventional commit messages
-type MessageGenerator struct{
+type MessageGenerator struct {
 	openAIAPIKey string
 }
 
