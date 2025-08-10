@@ -14,9 +14,9 @@ const (
 )
 
 func ProposeCommit(ctx context.Context, openAIAPIKey, diff string) (string, error) {
-	key := openAIAPIKey
+	key := os.Getenv("OPENAI_API_KEY")
 	if key == "" {
-		key = os.Getenv("OPENAI_API_KEY")
+		key = openAIAPIKey
 	}
 
 	if key == "" {

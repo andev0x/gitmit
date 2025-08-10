@@ -14,14 +14,14 @@ import (
 
 // InteractivePrompt handles user interaction for commit message customization
 type InteractivePrompt struct {
-	reader *bufio.Reader
+	reader       *bufio.Reader
 	openAIAPIKey string
 }
 
 // New creates a new InteractivePrompt instance
 func New(openAIAPIKey string) *InteractivePrompt {
 	return &InteractivePrompt{
-		reader: bufio.NewReader(os.Stdin),
+		reader:       bufio.NewReader(os.Stdin),
 		openAIAPIKey: openAIAPIKey,
 	}
 }
