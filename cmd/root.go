@@ -31,9 +31,17 @@ Features:
 		RunE:    runGitmit,
 	}
 
-	dryRun    bool
-	verbose   bool
-	useOpenAI bool
+	dryRun      bool
+	verbose     bool
+	useOpenAI   bool
+	quickCommit bool
+	amend       bool
+	interactive bool
+	message     string
+	scope       string
+	breaking    bool
+	analyze     bool
+	history     bool
 )
 
 func init() {

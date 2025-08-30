@@ -27,6 +27,11 @@ const (
 	Perf     CommitType = "perf"
 	CI       CommitType = "ci"
 	Build    CommitType = "build"
+	Security CommitType = "security"
+	Config   CommitType = "config"
+	Deploy   CommitType = "deploy"
+	Revert   CommitType = "revert"
+	WIP      CommitType = "wip"
 )
 
 // New creates a new MessageGenerator instance
@@ -100,14 +105,36 @@ func (m *MessageGenerator) determineCommitTypeFromDiffHints(analysis *analyzer.C
 	for _, hint := range analysis.DiffHints {
 		lowerHint := strings.ToLower(hint)
 		if strings.Contains(lowerHint, "fix") || strings.Contains(lowerHint, "bug") ||
-			strings.Contains(lowerHint, "error") || strings.Contains(lowerHint, "patch") {
+			strings.Contains(lowerHint, "error") || strings.Contains(lowerHint, "patch") ||
+			strings.Contains(lowerHint, "hotfix") {
 			return Fix, true
 		}
-		if strings.Contains(lowerHint, "performance") || strings.Contains(lowerHint, "optimize") {
+		if strings.Contains(lowerHint, "performance") || strings.Contains(lowerHint, "optimize") ||
+			strings.Contains(lowerHint, "speed") || strings.Contains(lowerHint, "fast") {
 			return Perf, true
 		}
-		if strings.Contains(lowerHint, "style") || strings.Contains(lowerHint, "format") {
+		if strings.Contains(lowerHint, "style") || strings.Contains(lowerHint, "format") ||
+			strings.Contains(lowerHint, "lint") || strings.Contains(lowerHint, "prettier") {
 			return Style, true
+		}
+		if strings.Contains(lowerHint, "security") || strings.Contains(lowerHint, "vulnerability") ||
+			strings.Contains(lowerHint, "auth") || strings.Contains(lowerHint, "crypto") {
+			return Security, true
+		}
+		if strings.Contains(lowerHint, "config") || strings.Contains(lowerHint, "settings") ||
+			strings.Contains(lowerHint, "env") || strings.Contains(lowerHint, "configuration") {
+			return Config, true
+		}
+		if strings.Contains(lowerHint, "deploy") || strings.Contains(lowerHint, "docker") ||
+			strings.Contains(lowerHint, "kubernetes") || strings.Contains(lowerHint, "k8s") {
+			return Deploy, true
+		}
+		if strings.Contains(lowerHint, "revert") || strings.Contains(lowerHint, "rollback") ||
+			strings.Contains(lowerHint, "undo") {
+			return Revert, true
+		}
+		if strings.Contains(lowerHint, "wip") || strings.Contains(lowerHint, "work in progress") {
+			return WIP, true
 		}
 	}
 	return "", false
