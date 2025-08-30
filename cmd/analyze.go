@@ -64,7 +64,7 @@ func getCommitStats() (*CommitStats, error) {
 	}
 	fmt.Sscanf(string(output), "%d", &stats.TotalCommits)
 
-	// Get commit type distribution
+	// Get commit type distribution with enhanced parsing
 	cmd = exec.Command("git", "log", "--pretty=format:%s")
 	output, err = cmd.Output()
 	if err != nil {
@@ -78,20 +78,14 @@ func getCommitStats() (*CommitStats, error) {
 			continue
 		}
 
-		// Extract commit type
-		parts := strings.Split(line, ":")
-		if len(parts) > 0 {
-			commitType := strings.TrimSpace(parts[0])
-			// Extract type from scope if present
-			if strings.Contains(commitType, "(") {
-				scopeStart := strings.Index(commitType, "(")
-				commitType = strings.TrimSpace(commitType[:scopeStart])
-			}
+		// Enhanced commit type extraction
+		commitType := extractCommitType(line)
+		if commitType != "" {
 			stats.CommitTypes[commitType]++
 		}
 	}
 
-	// Get most active files
+	// Get most active files with better analysis
 	cmd = exec.Command("git", "log", "--name-only", "--pretty=format:")
 	output, err = cmd.Output()
 	if err != nil {
@@ -107,10 +101,10 @@ func getCommitStats() (*CommitStats, error) {
 		}
 	}
 
-	// Get top 5 most active files
-	stats.MostActiveFiles = getTopFiles(fileCounts, 5)
+	// Get top 5 most active files with better sorting
+	stats.MostActiveFiles = getTopFilesSorted(fileCounts, 5)
 
-	// Get author statistics
+	// Get author statistics with enhanced parsing
 	cmd = exec.Command("git", "shortlog", "-sn")
 	output, err = cmd.Output()
 	if err != nil {
@@ -129,7 +123,7 @@ func getCommitStats() (*CommitStats, error) {
 		stats.Authors[author] = count
 	}
 
-	// Get recent activity
+	// Get recent activity with more detailed analysis
 	cmd = exec.Command("git", "log", "--since=1 week ago", "--oneline")
 	output, err = cmd.Output()
 	if err != nil {
@@ -141,18 +135,176 @@ func getCommitStats() (*CommitStats, error) {
 	return stats, nil
 }
 
-func getTopFiles(fileCounts map[string]int, limit int) []string {
-	var files []string
-	for file := range fileCounts {
-		files = append(files, file)
+// extractCommitType extracts commit type with enhanced pattern matching
+func extractCommitType(commitMessage string) string {
+	// Remove breaking change indicator
+	message := strings.TrimSuffix(commitMessage, "!")
+
+	// Split by colon to get type and scope
+	parts := strings.Split(message, ":")
+	if len(parts) == 0 {
+		return ""
 	}
 
-	// Simple sorting (in a real implementation, you'd use sort.Slice)
-	// For now, just return the first few files
-	if len(files) > limit {
-		return files[:limit]
+	commitType := strings.TrimSpace(parts[0])
+
+	// Extract type from scope if present (e.g., "feat(api)" -> "feat")
+	if strings.Contains(commitType, "(") {
+		scopeStart := strings.Index(commitType, "(")
+		commitType = strings.TrimSpace(commitType[:scopeStart])
 	}
-	return files
+
+	// Validate commit type
+	validTypes := []string{
+		"feat", "fix", "refactor", "chore", "test", "docs",
+		"style", "perf", "ci", "build", "security", "config",
+		"deploy", "revert", "wip", "hotfix", "patch", "release",
+	}
+
+	for _, validType := range validTypes {
+		if strings.EqualFold(commitType, validType) {
+			return strings.ToLower(commitType)
+		}
+	}
+
+	// If not a conventional commit, try to infer from message content
+	return inferCommitTypeFromMessage(commitMessage)
+}
+
+// inferCommitTypeFromMessage infers commit type from message content
+func inferCommitTypeFromMessage(message string) string {
+	lowerMessage := strings.ToLower(message)
+
+	// Feature patterns
+	if strings.Contains(lowerMessage, "add") || strings.Contains(lowerMessage, "new") ||
+		strings.Contains(lowerMessage, "implement") || strings.Contains(lowerMessage, "create") ||
+		strings.Contains(lowerMessage, "introduce") || strings.Contains(lowerMessage, "feature") {
+		return "feat"
+	}
+
+	// Fix patterns
+	if strings.Contains(lowerMessage, "fix") || strings.Contains(lowerMessage, "bug") ||
+		strings.Contains(lowerMessage, "issue") || strings.Contains(lowerMessage, "problem") ||
+		strings.Contains(lowerMessage, "error") || strings.Contains(lowerMessage, "resolve") ||
+		strings.Contains(lowerMessage, "correct") || strings.Contains(lowerMessage, "patch") {
+		return "fix"
+	}
+
+	// Documentation patterns
+	if strings.Contains(lowerMessage, "doc") || strings.Contains(lowerMessage, "readme") ||
+		strings.Contains(lowerMessage, "comment") || strings.Contains(lowerMessage, "guide") ||
+		strings.Contains(lowerMessage, "tutorial") || strings.Contains(lowerMessage, "example") {
+		return "docs"
+	}
+
+	// Test patterns
+	if strings.Contains(lowerMessage, "test") || strings.Contains(lowerMessage, "spec") ||
+		strings.Contains(lowerMessage, "coverage") || strings.Contains(lowerMessage, "assert") ||
+		strings.Contains(lowerMessage, "mock") || strings.Contains(lowerMessage, "stub") {
+		return "test"
+	}
+
+	// Performance patterns
+	if strings.Contains(lowerMessage, "perf") || strings.Contains(lowerMessage, "optimize") ||
+		strings.Contains(lowerMessage, "speed") || strings.Contains(lowerMessage, "fast") ||
+		strings.Contains(lowerMessage, "efficient") || strings.Contains(lowerMessage, "cache") {
+		return "perf"
+	}
+
+	// Refactor patterns
+	if strings.Contains(lowerMessage, "refactor") || strings.Contains(lowerMessage, "restructure") ||
+		strings.Contains(lowerMessage, "reorganize") || strings.Contains(lowerMessage, "clean") ||
+		strings.Contains(lowerMessage, "simplify") || strings.Contains(lowerMessage, "improve") {
+		return "refactor"
+	}
+
+	// Style patterns
+	if strings.Contains(lowerMessage, "style") || strings.Contains(lowerMessage, "format") ||
+		strings.Contains(lowerMessage, "lint") || strings.Contains(lowerMessage, "prettier") ||
+		strings.Contains(lowerMessage, "indent") || strings.Contains(lowerMessage, "spacing") {
+		return "style"
+	}
+
+	// Security patterns
+	if strings.Contains(lowerMessage, "security") || strings.Contains(lowerMessage, "auth") ||
+		strings.Contains(lowerMessage, "password") || strings.Contains(lowerMessage, "encrypt") ||
+		strings.Contains(lowerMessage, "vulnerability") || strings.Contains(lowerMessage, "secure") {
+		return "security"
+	}
+
+	// Configuration patterns
+	if strings.Contains(lowerMessage, "config") || strings.Contains(lowerMessage, "setting") ||
+		strings.Contains(lowerMessage, "env") || strings.Contains(lowerMessage, "configure") ||
+		strings.Contains(lowerMessage, "setup") || strings.Contains(lowerMessage, "init") {
+		return "config"
+	}
+
+	// Deployment patterns
+	if strings.Contains(lowerMessage, "deploy") || strings.Contains(lowerMessage, "docker") ||
+		strings.Contains(lowerMessage, "kubernetes") || strings.Contains(lowerMessage, "k8s") ||
+		strings.Contains(lowerMessage, "helm") || strings.Contains(lowerMessage, "infrastructure") {
+		return "deploy"
+	}
+
+	// CI/CD patterns
+	if strings.Contains(lowerMessage, "ci") || strings.Contains(lowerMessage, "cd") ||
+		strings.Contains(lowerMessage, "pipeline") || strings.Contains(lowerMessage, "workflow") ||
+		strings.Contains(lowerMessage, "github") || strings.Contains(lowerMessage, "gitlab") ||
+		strings.Contains(lowerMessage, "jenkins") || strings.Contains(lowerMessage, "travis") {
+		return "ci"
+	}
+
+	// Build patterns
+	if strings.Contains(lowerMessage, "build") || strings.Contains(lowerMessage, "webpack") ||
+		strings.Contains(lowerMessage, "rollup") || strings.Contains(lowerMessage, "vite") ||
+		strings.Contains(lowerMessage, "compile") || strings.Contains(lowerMessage, "bundle") {
+		return "build"
+	}
+
+	// Revert patterns
+	if strings.Contains(lowerMessage, "revert") || strings.Contains(lowerMessage, "rollback") ||
+		strings.Contains(lowerMessage, "undo") || strings.Contains(lowerMessage, "restore") {
+		return "revert"
+	}
+
+	// WIP patterns
+	if strings.Contains(lowerMessage, "wip") || strings.Contains(lowerMessage, "work in progress") ||
+		strings.Contains(lowerMessage, "draft") || strings.Contains(lowerMessage, "temporary") {
+		return "wip"
+	}
+
+	// Default to chore for maintenance tasks
+	return "chore"
+}
+
+// getTopFilesSorted returns top files sorted by frequency
+func getTopFilesSorted(fileCounts map[string]int, limit int) []string {
+	type fileCount struct {
+		file  string
+		count int
+	}
+
+	var files []fileCount
+	for file, count := range fileCounts {
+		files = append(files, fileCount{file: file, count: count})
+	}
+
+	// Sort by count (descending)
+	for i := 0; i < len(files)-1; i++ {
+		for j := i + 1; j < len(files); j++ {
+			if files[i].count < files[j].count {
+				files[i], files[j] = files[j], files[i]
+			}
+		}
+	}
+
+	// Return top files
+	var result []string
+	for i := 0; i < limit && i < len(files); i++ {
+		result = append(result, files[i].file)
+	}
+
+	return result
 }
 
 func displayCommitInsights(stats *CommitStats) {
