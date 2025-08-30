@@ -201,18 +201,96 @@ func (g *GitAnalyzer) extractDiffHints() ([]string, error) {
 	hints := make(map[string]bool)
 	diffContent := string(output)
 
-	// Define patterns for common code changes
+	// Enhanced patterns for better language understanding
 	patterns := map[string]*regexp.Regexp{
-		"added logging":    regexp.MustCompile(`\+.*(?:console\.log|fmt\.Print|log\.|logger\.|Logger)`),
-		"added functions":  regexp.MustCompile(`\+.*(?:func |function |def |const .* = |let .* = )`),
-		"updated imports":  regexp.MustCompile(`\+.*(?:import |require\(|#include|use )`),
-		"updated exports":  regexp.MustCompile(`\+.*(?:export |module\.exports)`),
-		"added todos":      regexp.MustCompile(`\+.*(?:TODO|FIXME|XXX|HACK)`),
-		"async operations": regexp.MustCompile(`\+.*(?:async |await |Promise|goroutine|threading)`),
-		"class changes":    regexp.MustCompile(`\+.*(?:class |struct |interface |type .*struct)`),
-		"error handling":   regexp.MustCompile(`\+.*(?:try|catch|except|panic|recover|error|Error)`),
-		"database changes": regexp.MustCompile(`\+.*(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE|ALTER TABLE)`),
-		"api endpoints":    regexp.MustCompile(`\+.*(?:@RequestMapping|@GetMapping|@PostMapping|router\.|app\.|http\.)`),
+		// Function and method changes
+		"added functions":   regexp.MustCompile(`\+.*(?:func |function |def |const .* = |let .* = |var .* = )`),
+		"updated functions": regexp.MustCompile(`^[+-].*(?:func |function |def )`),
+		"removed functions": regexp.MustCompile(`^-.*(?:func |function |def )`),
+
+		// Import and dependency changes
+		"updated imports":    regexp.MustCompile(`^[+-].*(?:import |require\(|#include|use |from )`),
+		"added dependencies": regexp.MustCompile(`\+.*(?:package\.json|go\.mod|requirements\.txt|Cargo\.toml|pom\.xml)`),
+		"updated exports":    regexp.MustCompile(`^[+-].*(?:export |module\.exports|pub |public )`),
+
+		// Error handling and logging
+		"added logging":      regexp.MustCompile(`\+.*(?:console\.log|fmt\.Print|log\.|logger\.|Logger|println|printf)`),
+		"error handling":     regexp.MustCompile(`^[+-].*(?:try|catch|except|panic|recover|error|Error|throw|raise)`),
+		"added error checks": regexp.MustCompile(`\+.*(?:if.*error|if.*err|check.*error|assert.*error)`),
+
+		// Async and concurrency
+		"async operations": regexp.MustCompile(`^[+-].*(?:async |await |Promise|goroutine|threading|future|coroutine)`),
+		"concurrency":      regexp.MustCompile(`^[+-].*(?:mutex|lock|semaphore|channel|select|spawn|thread)`),
+
+		// Class and structure changes
+		"class changes":       regexp.MustCompile(`^[+-].*(?:class |struct |interface |type .*struct|trait |enum )`),
+		"method changes":      regexp.MustCompile(`^[+-].*(?:public |private |protected |static |final )`),
+		"constructor changes": regexp.MustCompile(`^[+-].*(?:constructor|init|new |__init__)`),
+
+		// Database and data operations
+		"database changes": regexp.MustCompile(`^[+-].*(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE|ALTER TABLE|DROP TABLE|CREATE INDEX)`),
+		"query changes":    regexp.MustCompile(`^[+-].*(?:query|Query|sql|SQL|mongo|Mongo|redis|Redis)`),
+		"data validation":  regexp.MustCompile(`^[+-].*(?:validate|validation|check|verify|assert)`),
+
+		// API and web changes
+		"api endpoints":     regexp.MustCompile(`^[+-].*(?:@RequestMapping|@GetMapping|@PostMapping|@PutMapping|@DeleteMapping|router\.|app\.|http\.|endpoint|route)`),
+		"http methods":      regexp.MustCompile(`^[+-].*(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)`),
+		"response handling": regexp.MustCompile(`^[+-].*(?:response|Response|json|JSON|xml|XML|status|Status)`),
+
+		// Security and authentication
+		"security features": regexp.MustCompile(`^[+-].*(?:password|hash|encrypt|decrypt|jwt|token|auth|security|signature|verify)`),
+		"authentication":    regexp.MustCompile(`^[+-].*(?:login|logout|register|signin|signout|oauth|saml|ldap)`),
+		"authorization":     regexp.MustCompile(`^[+-].*(?:permission|role|access|authorize|grant|deny)`),
+
+		// Configuration and settings
+		"configuration":    regexp.MustCompile(`^[+-].*(?:config|settings|env|\.env|\.config|\.toml|\.yaml|\.yml|\.json|\.ini)`),
+		"environment vars": regexp.MustCompile(`^[+-].*(?:process\.env|os\.environ|getenv|setenv|environment)`),
+		"feature flags":    regexp.MustCompile(`^[+-].*(?:feature.*flag|toggle|switch|enable|disable)`),
+
+		// Deployment and infrastructure
+		"deployment":     regexp.MustCompile(`^[+-].*(?:docker|kubernetes|k8s|deploy|helm|dockerfile|docker-compose|kustomize)`),
+		"infrastructure": regexp.MustCompile(`^[+-].*(?:terraform|ansible|puppet|chef|cloudformation|serverless)`),
+		"monitoring":     regexp.MustCompile(`^[+-].*(?:metrics|monitoring|alert|prometheus|grafana|jaeger|zipkin)`),
+
+		// Performance and optimization
+		"performance":       regexp.MustCompile(`^[+-].*(?:cache|optimize|performance|speed|fast|efficient|benchmark|profile)`),
+		"memory management": regexp.MustCompile(`^[+-].*(?:memory|gc|garbage|alloc|free|malloc|new|delete)`),
+		"algorithm changes": regexp.MustCompile(`^[+-].*(?:algorithm|sort|search|filter|map|reduce|fold)`),
+
+		// Testing and quality
+		"testing":        regexp.MustCompile(`^[+-].*(?:test|spec|mock|stub|fixture|assert|expect|describe|it|should)`),
+		"test coverage":  regexp.MustCompile(`^[+-].*(?:coverage|coverage\.go|\.test\.|_test\.|test_|spec_|\.spec\.)`),
+		"quality checks": regexp.MustCompile(`^[+-].*(?:lint|linter|eslint|gofmt|black|rustfmt|clang-format|prettier)`),
+
+		// Documentation and comments
+		"documentation":     regexp.MustCompile(`^[+-].*(?:readme|docs|documentation|comment|javadoc|godoc|rustdoc|docstring)`),
+		"code comments":     regexp.MustCompile(`^[+-].*(?://|/\*|\*/|#|<!--|-->|"""|'''|///|//!)`),
+		"api documentation": regexp.MustCompile(`^[+-].*(?:swagger|openapi|api.*doc|postman|insomnia)`),
+
+		// Style and formatting
+		"style formatting": regexp.MustCompile(`^[+-].*(?:prettier|eslint|gofmt|black|rustfmt|clang-format|indent|spacing)`),
+		"code style":       regexp.MustCompile(`^[+-].*(?:style|format|lint|beautify|uglify|minify)`),
+
+		// Dependency and package management
+		"dependency updates": regexp.MustCompile(`^[+-].*(?:package\.json|go\.mod|requirements\.txt|Cargo\.toml|pom\.xml|composer\.json|Gemfile)`),
+		"version changes":    regexp.MustCompile(`^[+-].*(?:version|Version|v\d+\.\d+\.\d+|semver|major|minor|patch)`),
+
+		// Revert and rollback
+		"revert changes":   regexp.MustCompile(`^[+-].*(?:revert|rollback|undo|restore|backup|rollback|restore)`),
+		"work in progress": regexp.MustCompile(`^[+-].*(?:wip|work in progress|draft|temporary|temp|TODO|FIXME|XXX|HACK)`),
+
+		// UI and frontend
+		"ui components":    regexp.MustCompile(`^[+-].*(?:component|Component|widget|Widget|view|View|page|Page)`),
+		"styling":          regexp.MustCompile(`^[+-].*(?:css|CSS|scss|less|stylus|styled|className|class=|style=)`),
+		"user interaction": regexp.MustCompile(`^[+-].*(?:onClick|onChange|onSubmit|event|Event|handler|Handler)`),
+
+		// Mobile and platform specific
+		"mobile features":   regexp.MustCompile(`^[+-].*(?:android|Android|ios|iOS|react-native|flutter|mobile|Mobile)`),
+		"platform specific": regexp.MustCompile(`^[+-].*(?:windows|Windows|macos|macOS|linux|Linux|darwin|Darwin)`),
+
+		// Internationalization
+		"i18n":         regexp.MustCompile(`^[+-].*(?:i18n|internationalization|localization|locale|translation|translate)`),
+		"localization": regexp.MustCompile(`^[+-].*(?:gettext|po|mo|locale|language|lang|trans)`),
 	}
 
 	for hint, pattern := range patterns {
@@ -221,11 +299,11 @@ func (g *GitAnalyzer) extractDiffHints() ([]string, error) {
 		}
 	}
 
-	// Convert to slice and limit to top 3 hints
+	// Convert to slice and limit to top 5 hints
 	var result []string
 	for hint := range hints {
 		result = append(result, hint)
-		if len(result) >= 3 {
+		if len(result) >= 5 {
 			break
 		}
 	}

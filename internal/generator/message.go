@@ -259,3 +259,150 @@ func (m *MessageGenerator) generateDescription(analysis *analyzer.ChangeAnalysis
 func (m *MessageGenerator) getFileName(filePath string) string {
 	return filepath.Base(filePath)
 }
+
+// getMessageTemplates returns smart templates for different commit types
+func (m *MessageGenerator) getMessageTemplates() map[CommitType][]MessageTemplate {
+	return map[CommitType][]MessageTemplate{
+		Feat: {
+			{Type: Feat, Templates: []string{
+				"add %s functionality",
+				"implement %s feature",
+				"introduce %s capability",
+				"create %s component",
+				"add new %s",
+				"implement %s",
+				"add %s support",
+				"create %s",
+			}},
+		},
+		Fix: {
+			{Type: Fix, Templates: []string{
+				"fix %s issue",
+				"resolve %s problem",
+				"correct %s bug",
+				"patch %s",
+				"fix %s",
+				"resolve %s",
+				"address %s",
+				"repair %s",
+			}},
+		},
+		Refactor: {
+			{Type: Refactor, Templates: []string{
+				"refactor %s",
+				"restructure %s",
+				"reorganize %s",
+				"improve %s structure",
+				"clean up %s",
+				"optimize %s",
+				"simplify %s",
+			}},
+		},
+		Docs: {
+			{Type: Docs, Templates: []string{
+				"update %s documentation",
+				"improve %s docs",
+				"add %s documentation",
+				"update %s",
+				"document %s",
+				"clarify %s",
+				"enhance %s docs",
+			}},
+		},
+		Test: {
+			{Type: Test, Templates: []string{
+				"add %s tests",
+				"implement %s test coverage",
+				"add test for %s",
+				"improve %s test coverage",
+				"add %s test cases",
+				"test %s",
+			}},
+		},
+		Perf: {
+			{Type: Perf, Templates: []string{
+				"optimize %s performance",
+				"improve %s speed",
+				"enhance %s efficiency",
+				"boost %s performance",
+				"optimize %s",
+				"improve %s",
+			}},
+		},
+		Security: {
+			{Type: Security, Templates: []string{
+				"enhance %s security",
+				"improve %s safety",
+				"secure %s",
+				"add %s security measures",
+				"strengthen %s",
+				"protect %s",
+			}},
+		},
+		Config: {
+			{Type: Config, Templates: []string{
+				"update %s configuration",
+				"configure %s",
+				"adjust %s settings",
+				"modify %s config",
+				"set up %s",
+				"configure %s",
+			}},
+		},
+		Deploy: {
+			{Type: Deploy, Templates: []string{
+				"update %s deployment",
+				"deploy %s",
+				"configure %s deployment",
+				"set up %s deployment",
+				"prepare %s for deployment",
+			}},
+		},
+		CI: {
+			{Type: CI, Templates: []string{
+				"update %s CI/CD",
+				"improve %s pipeline",
+				"configure %s automation",
+				"set up %s workflow",
+				"enhance %s CI",
+			}},
+		},
+		Build: {
+			{Type: Build, Templates: []string{
+				"update %s build process",
+				"improve %s build",
+				"configure %s build",
+				"optimize %s build",
+				"set up %s build",
+			}},
+		},
+		Style: {
+			{Type: Style, Templates: []string{
+				"format %s",
+				"style %s",
+				"lint %s",
+				"clean up %s formatting",
+				"apply %s style",
+				"standardize %s",
+			}},
+		},
+		Chore: {
+			{Type: Chore, Templates: []string{
+				"update %s",
+				"maintain %s",
+				"clean up %s",
+				"organize %s",
+				"prepare %s",
+				"update %s dependencies",
+			}},
+		},
+	}
+}
+
+// MessageTemplate represents a commit message template
+type MessageTemplate struct {
+	Type       CommitType
+	Scope      string
+	Templates  []string
+	Conditions []string
+}
