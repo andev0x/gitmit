@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"bufio"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -13,13 +14,26 @@ type GitAnalyzer struct{}
 
 // ChangeAnalysis represents the analysis of staged changes
 type ChangeAnalysis struct {
-	Added     []string
-	Modified  []string
-	Deleted   []string
-	Renamed   []string
-	DiffHints []string
-	FileTypes map[string]int
-	Scopes    []string
+	Added            []string
+	Modified         []string
+	Deleted          []string
+	Renamed          []string
+	DiffHints        []string
+	FileTypes        map[string]int
+	Scopes           []string
+	LanguagePatterns map[string]int
+	CodeComplexity   string
+	ChangeImpact     string
+	SemanticHints    []string
+	FunctionChanges  []string
+	VariableChanges  []string
+	ImportChanges    []string
+	CommentChanges   []string
+	ErrorPatterns    []string
+	PerformanceHints []string
+	SecurityHints    []string
+	TestChanges      []string
+	ConfigChanges    []string
 }
 
 // FileChange represents a single file change
@@ -223,4 +237,30 @@ func (g *GitAnalyzer) extractDiffHints() ([]string, error) {
 func (g *GitAnalyzer) Commit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
 	return cmd.Run()
+}
+
+// GetLastCommitMessage retrieves the message of the last commit
+func (g *GitAnalyzer) GetLastCommitMessage() (string, error) {
+	cmd := exec.Command("git", "log", "-1", "--pretty=format:%s")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
+}
+
+// AmendCommit amends the last commit with the provided message
+func (g *GitAnalyzer) AmendCommit(message string) error {
+	cmd := exec.Command("git", "commit", "--amend", "-m", message)
+	return cmd.Run()
+}
+
+// GetRecentCommits retrieves the last n commit messages
+func (g *GitAnalyzer) GetRecentCommits(n int) (string, error) {
+	cmd := exec.Command("git", "log", "--pretty=format:%s", "-n", fmt.Sprintf("%d", n))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
 }

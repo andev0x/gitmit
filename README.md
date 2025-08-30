@@ -8,109 +8,215 @@
 
 </div>
 
-# 🧠 Gitmit
+# Gitmit - Smart Git Commit Message Generator
 
-Gitmit is a lightweight CLI tool that analyzes your staged changes and suggests professional commit messages following the Conventional Commits format.
+🧠 A lightweight CLI tool that analyzes your staged changes and suggests professional commit messages following Conventional Commits format.
 
-## 🔍 Why Gitmit?
+## Features
 
-Ever struggled to write a clear and concise commit message? Gitmit simplifies this process by analyzing your changes and suggesting commit messages that adhere to industry standards.
+- **Intelligent Analysis**: Analyzes git status and diff to understand your changes
+- **Conventional Commits**: Follows the [Conventional Commits](https://www.conventionalcommits.org/) specification
+- **Multiple Commit Types**: Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, config, deploy, revert, and wip
+- **Interactive Mode**: Customize commit messages with an interactive prompt
+- **Quick Commits**: Fast commits without interaction
+- **Smart Analysis**: Advanced commit history analysis and insights
+- **Amend Support**: Easily amend previous commits with smart suggestions
+- **Custom Messages**: Use custom messages with scope and breaking change support
+- **Zero Configuration**: Works out of the box
+- **Lightning Fast**: Complete offline operation
+- **OpenAI Integration**: Optional AI-powered commit message generation
 
-## ✨ Features
+## Installation
 
-- **Smart Analysis**: Understands your changes using `git status` and `git diff`
-- **Conventional Commits**: Follows the standard format (e.g., `feat`, `fix`, `refactor`)
-- **Interactive Mode**: Customize or accept suggestions interactively
-- **Privacy First**: Operates entirely offline
-- **Cross-Platform**: Works on Linux, macOS, and Windows
+### From Releases
 
-## 🚀 Installation
-
-### Using Go Install
-```bash
-go install github.com/andev0x/gitmit@latest
-```
+Download the latest release for your platform from the [releases page](https://github.com/andev0x/gitmit/releases).
 
 ### From Source
+
 ```bash
 git clone https://github.com/andev0x/gitmit.git
 cd gitmit
 go build -o gitmit
-sudo mv gitmit /usr/local/bin/
+./gitmit
 ```
 
-### Getting an OpenAI API Key :))
-
-1. Visit the OpenAI website at [OpenAI](https://platform.openai.com/account/api-keys).
-2. If you don't have an account, click on "Sign Up" to create one. If you do, click "Log In".
-3. Once logged in, navigate to your API key management page.
-4. Click on "Create new secret key".
-5. Enter a name for your new key, then click "Create secret key".
-6. Your new API key will be displayed. Use this key to interact with the OpenAI API.
-
-> **Note:** Your API key is sensitive information. Do not share it with anyone.
-
-
-### Binary Releases
-Download pre-built binaries from the [releases page](https://github.com/andev0x/gitmit/releases).
-
-## 📖 Usage
+## Usage
 
 ### Basic Usage
+
 ```bash
 # Stage your changes
 git add .
 
-# Run gitmit
+# Generate and commit with smart message
 gitmit
 ```
 
-### Command Line Options
+### Command Options
+
 ```bash
-gitmit --help      # Show help message
-gitmit --version   # Show version number
-gitmit --dry-run   # Show suggestion without committing
-gitmit --verbose   # Show detailed analysis
+# Show suggested message without committing
+gitmit --dry-run
+
+# Show detailed analysis
+gitmit --verbose
+
+# Quick commit without interaction
+gitmit --quick
+
+# Use OpenAI for enhanced message generation
+gitmit --openai
+
+# Amend the last commit
+gitmit --amend
+
+# Force interactive mode
+gitmit --interactive
+
+# Custom commit message
+gitmit --message "your custom message"
+
+# Specify commit scope
+gitmit --scope "api"
+
+# Mark as breaking change
+gitmit --breaking
 ```
 
-## 🤝 Contributing
+### Smart Analysis
 
-We welcome contributions! Please see the [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
 ```bash
-# Clone the repository
-git clone https://github.com/andev0x/gitmit.git
-cd gitmit
+# Analyze commit history and get insights
+gitmit analyze
 
-# Install dependencies
-go mod download
-
-# Run tests
-go test ./...
-
-# Build the project
-go build -o gitmit
-
-# Run locally
-./gitmit --help
+# Get smart commit suggestions
+gitmit smart
 ```
 
-## 📄 License
+### Propose Mode
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+```bash
+# Propose commit message from diff
+git diff --cached | gitmit propose
+```
 
-## 🙏 Acknowledgments
+## Commit Types
 
-- Inspired by [Conventional Commits](https://www.conventionalcommits.org/)
-- Built with [Cobra CLI](https://github.com/spf13/cobra)
-- Colored output by [Fatih Color](https://github.com/fatih/color)
+Gitmit automatically detects and suggests appropriate commit types:
 
----
+- **feat**: New features
+- **fix**: Bug fixes
+- **refactor**: Code refactoring
+- **chore**: Maintenance tasks
+- **test**: Adding or updating tests
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, etc.)
+- **perf**: Performance improvements
+- **ci**: CI/CD changes
+- **build**: Build system changes
+- **security**: Security improvements
+- **config**: Configuration changes
+- **deploy**: Deployment changes
+- **revert**: Reverting previous commits
+- **wip**: Work in progress
 
-**Made with ❤️ by the open source community**
+## Examples
 
-**Author** [@github](https://github.com/andev0x)
+### Feature Addition
+```bash
+git add new-feature.js
+gitmit
+# Suggests: feat: add new-feature.js
+```
 
+### Bug Fix
+```bash
+git add bug-fix.js
+gitmit
+# Suggests: fix: resolve issue in bug-fix.js
+```
 
-If you find Gitmit useful, please consider giving it a ⭐ on GitHub!
+### Documentation Update
+```bash
+git add README.md
+gitmit
+# Suggests: docs: update README
+```
+
+### Quick Commit
+```bash
+git add .
+gitmit --quick
+# Commits immediately with auto-generated message
+```
+
+### Custom Message with Scope
+```bash
+git add .
+gitmit --message "improve performance" --scope "api" --breaking
+# Creates: feat(api)!: improve performance
+```
+
+### Amend Previous Commit
+```bash
+git add additional-changes.js
+gitmit --amend
+# Amends the last commit with new changes
+```
+
+## Smart Analysis Features
+
+### Commit History Analysis
+```bash
+gitmit analyze
+```
+
+Provides insights on:
+- Commit patterns and trends
+- Most active files and directories
+- Commit type distribution
+- Development velocity
+- Potential improvements
+
+### Smart Suggestions
+```bash
+gitmit smart
+```
+
+Offers:
+- Multiple commit suggestions with confidence levels
+- Context-aware reasoning
+- File operation analysis
+- Scope detection
+- Breaking change identification
+
+## Configuration
+
+Gitmit works out of the box with zero configuration. However, you can enhance it with:
+
+### OpenAI Integration
+Set your OpenAI API key for enhanced commit message generation:
+```bash
+export OPENAI_API_KEY="your-api-key"
+gitmit --openai
+```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Roadmap
+
+- [ ] Git hooks integration
+- [ ] Team commit templates
+- [ ] Commit message validation
+- [ ] Integration with issue trackers
+- [ ] Multi-language support
+- [ ] Commit message templates
+- [ ] Branch-based suggestions
+- [ ] Commit message history learning
