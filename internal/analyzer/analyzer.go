@@ -11,20 +11,20 @@ import (
 
 // CommitMessage represents the analyzed commit message components
 type CommitMessage struct {
-	Action        string
-	Topic         string
-	Item          string
-	Purpose       string
-	Scope         string
-	IsMajor       bool
-	TotalAdded    int
-	TotalRemoved  int
+	Action         string
+	Topic          string
+	Item           string
+	Purpose        string
+	Scope          string
+	IsMajor        bool
+	TotalAdded     int
+	TotalRemoved   int
 	FileExtensions []string
-	RenamedFiles  []*parser.Change
-	CopiedFiles   []*parser.Change
-	IsDocsOnly    bool
-	IsConfigOnly  bool
-	IsDepsOnly    bool
+	RenamedFiles   []*parser.Change
+	CopiedFiles    []*parser.Change
+	IsDocsOnly     bool
+	IsConfigOnly   bool
+	IsDepsOnly     bool
 }
 
 // Analyzer is responsible for analyzing git changes and generating commit message components
@@ -185,17 +185,17 @@ func (a *Analyzer) determinePurpose(diff string) string {
 		"test":       "testing",
 		"config":     "configuration",
 		"ci":         "ci/cd",
-		"log":        "logging",		"sql":        "database logic",
-		"gorm":       "database logic",
-		"feat":       "new feature",
-		"bug":        "bug fix",
-		"fix":        "bug fix",
-		"cleanup":    "code cleanup",
-		"perf":       "performance improvement",
-		"security":   "security update",
-		"dep":        "dependency update",
-		"build":      "build system",
-		"style":      "code style",
+		"log":        "logging", "sql": "database logic",
+		"gorm":     "database logic",
+		"feat":     "new feature",
+		"bug":      "bug fix",
+		"fix":      "bug fix",
+		"cleanup":  "code cleanup",
+		"perf":     "performance improvement",
+		"security": "security update",
+		"dep":      "dependency update",
+		"build":    "build system",
+		"style":    "code style",
 	}
 
 	for keyword, purpose := range keywords {
