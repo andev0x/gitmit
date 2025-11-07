@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"os"
 
-	"github.com/andev0x/gitmit/internal/llm"
-	"github.com/andev0x/gitmit/internal/prompt"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+
+	"gitmit/internal/analyzer"
+	"gitmit/internal/formatter"
+	"gitmit/internal/parser"
+	"gitmit/internal/templater"
 )
 
 var proposeCmd = &cobra.Command{
@@ -22,44 +23,38 @@ func init() {
 }
 
 func runPropose(cmd *cobra.Command, args []string) error {
-	bytes, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		return err
-	}
-	diff := string(bytes)
-
-	if diff == "" {
-		return fmt.Errorf("diff is empty")
-	}
-
-	var openAIAPIKey string
-	if useOpenAI {
-		// Temporarily create a prompt instance to get the key
-		tempPrompt := prompt.New("") // Pass empty string for now
-		key, err := tempPrompt.PromptForOpenAIKey()
-		if err != nil {
-			return err
-		}
-		openAIAPIKey = key
-	}
-
-	initialMessage, err := llm.ProposeCommit(cmd.Context(), openAIAPIKey, diff)
+	gitParser := parser.NewGitParser()
+	changes, err := gitParser.ParseStagedChanges()
 	if err != nil {
 		return err
 	}
 
-	color.Green(initialMessage)
+	if len(changes) == 0 {
+		return fmt.Errorf("no staged changes")
+	}
 
-	p := prompt.New(openAIAPIKey)
-	finalMessage, err := p.PromptForMessage(initialMessage, diff)
+	analyzer := analyzer.NewAnalyzer(changes)
+	commitMessage := analyzer.AnalyzeChanges()
+	if commitMessage == nil {
+		return fmt.Errorf("could not analyze changes")
+	}
+
+	templater, err := templater.NewTemplater("templates.json")
 	if err != nil {
 		return err
 	}
 
-	if finalMessage != "" {
-		fmt.Println("\nFinal commit message:")
-		color.Green(finalMessage)
+	initialMessage, err := templater.GetMessage(commitMessage)
+	if err != nil {
+		return err
 	}
+
+	formatter := formatter.NewFormatter()
+	finalMessage := formatter.FormatMessage(initialMessage)
+
+	color.Green(finalMessage)
+
+	fmt.Println("\nCopy the message above and use it to commit.")
 
 	return nil
 }
