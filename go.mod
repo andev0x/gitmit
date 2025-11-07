@@ -1,4 +1,4 @@
-module github.com/andev0x/gitmit
+module gitmit
 
 go 1.23.0
 
@@ -6,9 +6,7 @@ toolchain go1.24.5
 
 require (
 	github.com/fatih/color v1.16.0
-	github.com/sashabaranov/go-openai v1.40.5
 	github.com/spf13/cobra v1.8.0
-	golang.org/x/term v0.34.0
 )
 
 require (
