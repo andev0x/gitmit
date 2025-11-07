@@ -145,9 +145,9 @@
 
   "R": {
     "_default": [
-      "refactor({topic}): major code reorganization",
-      "refactor({topic}): restructure project modules",
-      "chore({topic}): simplify architecture and improve clarity"
+      "refactor({topic}): rename {source} to {target}",
+      "refactor({topic}): move {source} to {target}",
+      "refactor({topic}): restructure project modules"
     ]
   },
 

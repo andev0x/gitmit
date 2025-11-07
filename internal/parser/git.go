@@ -5,25 +5,30 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
 // Change represents a single file change
 type Change struct {
-	File      string
-	Action    string
-	Added     int
-	Removed   int
-	IsMajor   bool
-	IsRename  bool
-	IsCopy    bool
-	Source    string
-	Target    string
-	Diff      string
+	File          string
+	Action        string
+	Added         int
+	Removed       int
+	IsMajor       bool
+	IsRename      bool
+	IsCopy        bool
+	Source        string
+	Target        string
+	Diff          string
+	FileExtension string
 }
 
 // GitParser is responsible for parsing git diffs
-type GitParser struct{}
+type GitParser struct {
+	TotalAdded   int
+	TotalRemoved int
+}
 
 // NewGitParser creates a new GitParser
 func NewGitParser() *GitParser {
@@ -52,10 +57,11 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 
 		action := string(parts[0][0])
 		file := parts[1]
-		
+
 		change := &Change{
-			File:   file,
-			Action: action,
+			File:          file,
+			Action:        action,
+			FileExtension: getFileExtension(file),
 		}
 
 		// Handle renames and copies
@@ -68,6 +74,7 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 			change.Source = parts[1]
 			change.Target = parts[2]
 			change.File = parts[2] // Use the new name as the file
+			change.FileExtension = getFileExtension(parts[2])
 		}
 
 		// Get the diff for the file
@@ -90,6 +97,8 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 				change.Removed++
 			}
 		}
+		p.TotalAdded += change.Added
+		p.TotalRemoved += change.Removed
 
 		// Detect large changes
 		if (change.Added + change.Removed) >= 500 {
@@ -104,4 +113,9 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 	}
 
 	return changes, nil
+}
+
+// getFileExtension returns the file extension of a given file path
+func getFileExtension(filename string) string {
+	return strings.TrimPrefix(filepath.Ext(filename), ".")
 }
