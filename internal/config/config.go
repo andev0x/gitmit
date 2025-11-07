@@ -9,8 +9,8 @@ import (
 
 // Config represents the structure of .commit_suggest.json
 type Config struct {
-	TopicMappings    map[string]string `json:"topicMappings"`
-	KeywordMappings  map[string]string `json:"keywordMappings"`	// Add more fields for custom templates, etc.
+	TopicMappings   map[string]string `json:"topicMappings"`
+	KeywordMappings map[string]string `json:"keywordMappings"` // Add more fields for custom templates, etc.
 }
 
 // LoadConfig loads the configuration from .commit_suggest.json
