@@ -4,12 +4,10 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"gitmit/internal/analyzer"
 	"gitmit/internal/history"
@@ -32,22 +30,34 @@ func NewTemplater(templateFile string, hist *history.CommitHistory) (*Templater,
 	var data []byte
 	var err error
 
-	// Try loading from the executable's directory first
-	execPath, err := os.Executable()
-	if err == nil {
-		execDir := filepath.Dir(execPath)
-		localTemplatePath := filepath.Join(execDir, templateFile)
-		data, err = ioutil.ReadFile(localTemplatePath)
+	// For offline use, try loading from multiple locations in order:
+	// 1. Current working directory
+	// 2. Executable's directory
+	// 3. Embedded templates
+
+	// Try current working directory first
+	pwd, _ := os.Getwd()
+	localPath := filepath.Join(pwd, templateFile)
+	data, err = os.ReadFile(localPath)
+
+	// If not found in current directory, try executable's directory
+	if err != nil || len(data) == 0 {
+		execPath, execErr := os.Executable()
+		if execErr == nil {
+			execDir := filepath.Dir(execPath)
+			execLocalPath := filepath.Join(execDir, templateFile)
+			data, err = os.ReadFile(execLocalPath)
+		}
 	}
 
-	// If local file not found or error, use embedded templates
+	// Finally, try embedded templates
 	if err != nil || len(data) == 0 {
 		data, err = embeddedTemplates.ReadFile(templateFile)
 		if err != nil {
-			return nil, fmt.Errorf("error reading embedded template file: %w", err)
+			return nil, fmt.Errorf("error reading templates: tried current directory (%s), executable directory, and embedded templates", localPath)
 		}
 		if len(data) == 0 {
-			return nil, fmt.Errorf("no templates found, neither local nor embedded")
+			return nil, fmt.Errorf("no valid templates found in any location")
 		}
 	}
 
@@ -57,40 +67,89 @@ func NewTemplater(templateFile string, hist *history.CommitHistory) (*Templater,
 		return nil, fmt.Errorf("error unmarshaling template file: %w", err)
 	}
 
-	// Basic validation: ensure essential actions and _default exist
-	if _, ok := templates["A"]; !ok {
-		return nil, fmt.Errorf("template validation failed: missing 'A' action templates")
-	}
-	if _, ok := templates["M"]; !ok {
-		return nil, fmt.Errorf("template validation failed: missing 'M' action templates")
-	}
-	if _, ok := templates["D"]; !ok {
-		return nil, fmt.Errorf("template validation failed: missing 'D' action templates")
-	}
-	// Add more validation as needed
+	// Comprehensive template validation for offline use
+	requiredActions := []string{"A", "M", "D", "R", "MISC"}
+	missingActions := []string{}
 
-	rand.Seed(time.Now().UnixNano())
+	for _, action := range requiredActions {
+		actionTemplates, ok := templates[action]
+		if !ok {
+			missingActions = append(missingActions, action)
+			continue
+		}
+
+		// Validate that each action has _default templates
+		if defaultTemplates, ok := actionTemplates["_default"]; !ok || len(defaultTemplates) == 0 {
+			return nil, fmt.Errorf("template validation failed: action '%s' missing required '_default' templates", action)
+		}
+
+		// Validate that templates are properly formatted
+		for topic, messages := range actionTemplates {
+			if len(messages) == 0 {
+				return nil, fmt.Errorf("template validation failed: action '%s', topic '%s' has no templates", action, topic)
+			}
+
+			// Check for valid placeholder format in each template
+			for _, tmpl := range messages {
+				if strings.Count(tmpl, "{") != strings.Count(tmpl, "}") {
+					return nil, fmt.Errorf("template validation failed: mismatched placeholder braces in template: %s", tmpl)
+				}
+			}
+		}
+	}
+
+	if len(missingActions) > 0 {
+		return nil, fmt.Errorf("template validation failed: missing required actions: %v", missingActions)
+	}
+
+	// No need to seed in Go 1.20+ as it's automatically handled
 
 	return &Templater{templates: templates, history: hist}, nil
 }
 
 // GetMessage selects and formats a commit message
 func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
+	// First, normalize the action
 	actionUpper := strings.ToUpper(msg.Action)
 	actionTemplates, ok := t.templates[actionUpper]
 	if !ok {
-		// Fallback to MISC for unknown actions
-		actionTemplates, ok = t.templates["MISC"]
+		// For offline use, we have a more detailed fallback strategy
+		fallbackActions := []string{"MISC", "A", "M"} // Priority order for fallbacks
+		for _, fallback := range fallbackActions {
+			if templates, exists := t.templates[fallback]; exists {
+				actionTemplates = templates
+				ok = true
+				break
+			}
+		}
 		if !ok {
-			return "", fmt.Errorf("no templates found for action: %s or MISC", msg.Action)
+			return "", fmt.Errorf("no suitable templates found for action: %s (tried fallbacks: %v)", msg.Action, fallbackActions)
 		}
 	}
 
-	topicTemplates, ok := actionTemplates[msg.Topic]
-	if !ok || len(topicTemplates) == 0 {
-		topicTemplates, ok = actionTemplates["_default"]
-		if !ok || len(topicTemplates) == 0 {
-			return "", fmt.Errorf("no templates found for topic: %s and no _default", msg.Topic)
+	// Topic selection with smart fallback for offline use
+	var topicTemplates []string
+	normalizedTopic := strings.ToLower(msg.Topic)
+
+	// Try exact match first
+	if templates, exists := actionTemplates[normalizedTopic]; exists && len(templates) > 0 {
+		topicTemplates = templates
+	} else {
+		// Try fuzzy matching for similar topics
+		for topic, templates := range actionTemplates {
+			if strings.Contains(topic, normalizedTopic) || strings.Contains(normalizedTopic, topic) {
+				topicTemplates = templates
+				break
+			}
+		}
+
+		// If no match found, fall back to _default
+		if len(topicTemplates) == 0 {
+			if defaults, exists := actionTemplates["_default"]; exists && len(defaults) > 0 {
+				topicTemplates = defaults
+			} else {
+				return "", fmt.Errorf("no suitable templates found for topic: %s (action: %s)", msg.Topic, actionUpper)
+			}
 		}
 	}
 
@@ -130,7 +189,7 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 
 	if selectedTemplate == "" {
 		// If all templates are recent duplicates, just pick a random one
-		selectedTemplate = topicTemplates[rand.Intn(len(topicTemplates))]
+		selectedTemplate = topicTemplates[rand.IntN(len(topicTemplates))]
 	}
 
 	formattedMsg := replacer.Replace(selectedTemplate)
