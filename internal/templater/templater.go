@@ -4,7 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"math/rand/v2"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,60 +109,167 @@ func NewTemplater(templateFile string, hist *history.CommitHistory) (*Templater,
 
 // GetMessage selects and formats a commit message
 func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
-	// First, normalize the action
-	actionUpper := strings.ToUpper(msg.Action)
-	actionTemplates, ok := t.templates[actionUpper]
+	// Map analyzer action names (feat, fix, refactor, chore, docs, test, etc.)
+	// to the template groups used in templates.json (A, M, D, R, DOC, MISC)
+	actionMap := map[string]string{
+		"feat":     "A",
+		"add":      "A",
+		"fix":      "M",
+		"bugfix":   "M",
+		"refactor": "R",
+		"chore":    "D",
+		"test":     "M",
+		"docs":     "DOC",
+		"ci":       "M",
+		"perf":     "M",
+		"style":    "MISC",
+		"build":    "MISC",
+	}
+
+	// Normalize and resolve action group
+	actionLower := strings.ToLower(msg.Action)
+	var actionKey string
+	if key, ok := actionMap[actionLower]; ok {
+		actionKey = key
+	} else if len(msg.Action) == 1 {
+		// Already a single-letter action like A/M/D/R
+		actionKey = strings.ToUpper(msg.Action)
+	} else {
+		// fallback to MISC
+		actionKey = "MISC"
+	}
+
+	actionTemplates, ok := t.templates[actionKey]
 	if !ok {
-		// For offline use, we have a more detailed fallback strategy
-		fallbackActions := []string{"MISC", "A", "M"} // Priority order for fallbacks
-		for _, fallback := range fallbackActions {
-			if templates, exists := t.templates[fallback]; exists {
+		// Try fallbacks: specific order prefers DOC then A then M then MISC
+		fallbackActions := []string{"DOC", "A", "M", "R", "D", "MISC"}
+		for _, fb := range fallbackActions {
+			if templates, exists := t.templates[fb]; exists {
 				actionTemplates = templates
 				ok = true
 				break
 			}
 		}
 		if !ok {
-			return "", fmt.Errorf("no suitable templates found for action: %s (tried fallbacks: %v)", msg.Action, fallbackActions)
+			return "", fmt.Errorf("no suitable templates found for action: %s (resolved key: %s)", msg.Action, actionKey)
 		}
 	}
 
-	// Topic selection with smart fallback for offline use
+	// Topic selection with improved matching and weighting
+	normalizedTopic := strings.ToLower(strings.TrimSpace(msg.Topic))
 	var topicTemplates []string
-	normalizedTopic := strings.ToLower(msg.Topic)
 
-	// Try exact match first
-	if templates, exists := actionTemplates[normalizedTopic]; exists && len(templates) > 0 {
-		topicTemplates = templates
-	} else {
-		// Try fuzzy matching for similar topics
+	// exact match
+	if normalizedTopic != "" {
+		if templates, exists := actionTemplates[normalizedTopic]; exists && len(templates) > 0 {
+			topicTemplates = templates
+		}
+	}
+
+	// fuzzy match if exact not found
+	if len(topicTemplates) == 0 {
 		for topic, templates := range actionTemplates {
-			if strings.Contains(topic, normalizedTopic) || strings.Contains(normalizedTopic, topic) {
+			if topic == "_default" {
+				continue
+			}
+			tname := strings.ToLower(topic)
+			if normalizedTopic != "" && (strings.Contains(tname, normalizedTopic) || strings.Contains(normalizedTopic, tname)) {
 				topicTemplates = templates
 				break
 			}
 		}
+	}
 
-		// If no match found, fall back to _default
-		if len(topicTemplates) == 0 {
-			if defaults, exists := actionTemplates["_default"]; exists && len(defaults) > 0 {
-				topicTemplates = defaults
-			} else {
-				return "", fmt.Errorf("no suitable templates found for topic: %s (action: %s)", msg.Topic, actionUpper)
-			}
+	// fall back to _default
+	if len(topicTemplates) == 0 {
+		if defaults, exists := actionTemplates["_default"]; exists && len(defaults) > 0 {
+			topicTemplates = defaults
+		} else {
+			return "", fmt.Errorf("no suitable templates found for topic: %s (action: %s)", msg.Topic, actionKey)
 		}
 	}
 
-	// Prepare replacer for placeholders
+	// Prepare placeholder values
 	source := ""
-	if len(msg.RenamedFiles) > 0 {
-		source = msg.RenamedFiles[0].Source
-	}
 	target := ""
 	if len(msg.RenamedFiles) > 0 {
+		source = msg.RenamedFiles[0].Source
 		target = msg.RenamedFiles[0].Target
 	}
 
+	// Scoring-based selection: prefer templates that use available context
+	type scored struct {
+		tmpl  string
+		score int
+	}
+
+	var candidates []scored
+
+	for _, tmpl := range topicTemplates {
+		score := 0
+		// reward templates that include placeholders we can fill
+		if strings.Contains(tmpl, "{item}") && msg.Item != "" {
+			score += 3
+		}
+		if strings.Contains(tmpl, "{purpose}") && msg.Purpose != "" && msg.Purpose != "general update" {
+			score += 2
+		}
+		if strings.Contains(tmpl, "{source}") && source != "" {
+			score += 3
+		}
+		if strings.Contains(tmpl, "{target}") && target != "" {
+			score += 3
+		}
+		if strings.Contains(tmpl, "{topic}") && normalizedTopic != "" {
+			score += 1
+		}
+		// small randomness to diversify choices
+	score += rand.Intn(2)
+
+		candidates = append(candidates, scored{tmpl: tmpl, score: score})
+	}
+
+	// sort candidates by score (simple selection of best score)
+	bestScore := -1
+	var bestCandidates []string
+	for _, c := range candidates {
+		if c.score > bestScore {
+			bestScore = c.score
+			bestCandidates = []string{c.tmpl}
+		} else if c.score == bestScore {
+			bestCandidates = append(bestCandidates, c.tmpl)
+		}
+	}
+
+	// Prefer a template that is not in recent history
+	replacerForCheck := strings.NewReplacer(
+		"{topic}", msg.Topic,
+		"{item}", msg.Item,
+		"{purpose}", msg.Purpose,
+		"{source}", source,
+		"{target}", target,
+	)
+
+	var chosen string
+	for _, tmpl := range bestCandidates {
+		candidateMsg := replacerForCheck.Replace(tmpl)
+		if !t.history.Contains(candidateMsg) {
+			chosen = tmpl
+			break
+		}
+	}
+
+	// If all best candidates are in history, pick a random best candidate
+	if chosen == "" {
+		if len(bestCandidates) > 0 {
+			chosen = bestCandidates[rand.Intn(len(bestCandidates))]
+		} else {
+			// final fallback: random from topicTemplates
+			chosen = topicTemplates[rand.Intn(len(topicTemplates))]
+		}
+	}
+
+	// Final replacement
 	replacer := strings.NewReplacer(
 		"{topic}", msg.Topic,
 		"{item}", msg.Item,
@@ -171,33 +278,84 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 		"{target}", target,
 	)
 
-	// Select a random template, avoiding recent duplicates
-	var selectedTemplate string
-	shuffledTemplates := make([]string, len(topicTemplates))
-	copy(shuffledTemplates, topicTemplates)
-	rand.Shuffle(len(shuffledTemplates), func(i, j int) {
-		shuffledTemplates[i], shuffledTemplates[j] = shuffledTemplates[j], shuffledTemplates[i]
-	})
+	formattedMsg := replacer.Replace(chosen)
 
-	for _, tmpl := range shuffledTemplates {
-		potentialMessage := replacer.Replace(tmpl)
-		if !t.history.Contains(potentialMessage) {
-			selectedTemplate = tmpl
-			break
-		}
-	}
-
-	if selectedTemplate == "" {
-		// If all templates are recent duplicates, just pick a random one
-		selectedTemplate = topicTemplates[rand.IntN(len(topicTemplates))]
-	}
-
-	formattedMsg := replacer.Replace(selectedTemplate)
-
-	// Handle scope
+	// If scope exists, prefer replacing the topic scope pattern when present
 	if msg.Scope != "" {
+		// try common patterns
 		formattedMsg = strings.Replace(formattedMsg, "("+msg.Topic+")", "("+msg.Scope+")", 1)
 	}
 
 	return formattedMsg, nil
+}
+
+// DebugInfo returns the resolved action key and the candidate templates for a CommitMessage
+func (t *Templater) DebugInfo(msg *analyzer.CommitMessage) (string, []string) {
+	// same mapping as in GetMessage
+	actionMap := map[string]string{
+		"feat":     "A",
+		"add":      "A",
+		"fix":      "M",
+		"bugfix":   "M",
+		"refactor": "R",
+		"chore":    "D",
+		"test":     "M",
+		"docs":     "DOC",
+		"ci":       "M",
+		"perf":     "M",
+		"style":    "MISC",
+		"build":    "MISC",
+	}
+
+	actionLower := strings.ToLower(msg.Action)
+	var actionKey string
+	if key, ok := actionMap[actionLower]; ok {
+		actionKey = key
+	} else if len(msg.Action) == 1 {
+		actionKey = strings.ToUpper(msg.Action)
+	} else {
+		actionKey = "MISC"
+	}
+
+	actionTemplates, ok := t.templates[actionKey]
+	if !ok {
+		fallbackActions := []string{"DOC", "A", "M", "R", "D", "MISC"}
+		for _, fb := range fallbackActions {
+			if templates, exists := t.templates[fb]; exists {
+				actionTemplates = templates
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return actionKey, nil
+		}
+	}
+
+	normalizedTopic := strings.ToLower(strings.TrimSpace(msg.Topic))
+	var topicTemplates []string
+	if normalizedTopic != "" {
+		if templates, exists := actionTemplates[normalizedTopic]; exists && len(templates) > 0 {
+			topicTemplates = templates
+		}
+	}
+	if len(topicTemplates) == 0 {
+		for topic, templates := range actionTemplates {
+			if topic == "_default" {
+				continue
+			}
+			tname := strings.ToLower(topic)
+			if normalizedTopic != "" && (strings.Contains(tname, normalizedTopic) || strings.Contains(normalizedTopic, tname)) {
+				topicTemplates = templates
+				break
+			}
+		}
+	}
+	if len(topicTemplates) == 0 {
+		if defaults, exists := actionTemplates["_default"]; exists && len(defaults) > 0 {
+			topicTemplates = defaults
+		}
+	}
+
+	return actionKey, topicTemplates
 }
