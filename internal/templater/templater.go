@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"gitmit/internal/analyzer"
@@ -224,7 +225,7 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 			score += 1
 		}
 		// small randomness to diversify choices
-	score += rand.Intn(2)
+		score += rand.Intn(2)
 
 		candidates = append(candidates, scored{tmpl: tmpl, score: score})
 	}
@@ -287,6 +288,125 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 	}
 
 	return formattedMsg, nil
+}
+
+// GetSuggestions returns multiple commit message suggestions ranked by context matching
+func (t *Templater) GetSuggestions(msg *analyzer.CommitMessage, maxSuggestions int) ([]string, error) {
+	actionKey, candidates := t.DebugInfo(msg)
+	if candidates == nil || len(candidates) == 0 {
+		return nil, fmt.Errorf("no templates found for action: %s", actionKey)
+	}
+
+	// Score all candidates
+	type scoredTemplate struct {
+		template string
+		score    int
+	}
+
+	var scored []scoredTemplate
+
+	// Prepare placeholder values
+	source := ""
+	target := ""
+	if len(msg.RenamedFiles) > 0 {
+		source = msg.RenamedFiles[0].Source
+		target = msg.RenamedFiles[0].Target
+	}
+
+	for _, tmpl := range candidates {
+		score := 0
+
+		// Core context matching
+		if strings.Contains(tmpl, "{item}") && msg.Item != "" {
+			score += 3
+		}
+		if strings.Contains(tmpl, "{purpose}") && msg.Purpose != "" && msg.Purpose != "general update" {
+			score += 2
+		}
+		if strings.Contains(tmpl, "{source}") && source != "" {
+			score += 3
+		}
+		if strings.Contains(tmpl, "{target}") && target != "" {
+			score += 3
+		}
+		if strings.Contains(tmpl, "{topic}") && msg.Topic != "" {
+			score += 1
+		}
+
+		// Additional heuristics
+		if msg.IsDocsOnly && strings.Contains(strings.ToLower(tmpl), "doc") {
+			score += 2
+		}
+		if msg.IsConfigOnly && strings.Contains(strings.ToLower(tmpl), "config") {
+			score += 2
+		}
+		if msg.IsDepsOnly && strings.Contains(strings.ToLower(tmpl), "dep") {
+			score += 2
+		}
+
+		// File type bonus
+		for _, ext := range msg.FileExtensions {
+			if strings.Contains(strings.ToLower(tmpl), ext) {
+				score++
+			}
+		}
+
+		// Small randomness for variety
+		score += rand.Intn(2)
+
+		scored = append(scored, scoredTemplate{tmpl, score})
+	}
+
+	// Sort by score descending
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+
+	// Get top N suggestions
+	suggestions := make([]string, 0, maxSuggestions)
+	usedMessages := make(map[string]bool)
+
+	replacer := strings.NewReplacer(
+		"{topic}", msg.Topic,
+		"{item}", msg.Item,
+		"{purpose}", msg.Purpose,
+		"{source}", source,
+		"{target}", target,
+	)
+
+	// Take top scored templates until we have enough unique messages
+	for _, s := range scored {
+		if len(suggestions) >= maxSuggestions {
+			break
+		}
+
+		message := replacer.Replace(s.template)
+
+		// Skip if we've seen this exact message or it's in history
+		if usedMessages[message] || t.history.Contains(message) {
+			continue
+		}
+
+		suggestions = append(suggestions, message)
+		usedMessages[message] = true
+	}
+
+	// If we don't have enough suggestions, include some that might be in history
+	if len(suggestions) < maxSuggestions {
+		for _, s := range scored {
+			if len(suggestions) >= maxSuggestions {
+				break
+			}
+
+			message := replacer.Replace(s.template)
+			if !usedMessages[message] {
+				suggestions = append(suggestions, message)
+				usedMessages[message] = true
+			}
+		}
+	}
+
+	return suggestions, nil
 }
 
 // DebugInfo returns the resolved action key and the candidate templates for a CommitMessage
