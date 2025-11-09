@@ -21,6 +21,7 @@ var (
 	summaryFlag bool
 	autoFlag    bool
 	dryRunFlag  bool
+	debugFlag   bool
 
 	proposeCmd = &cobra.Command{
 		Use:   "propose",
@@ -36,6 +37,7 @@ func init() {
 	proposeCmd.Flags().BoolVar(&summaryFlag, "summary", false, "Print short output (summary only)")
 	proposeCmd.Flags().BoolVar(&autoFlag, "auto", false, "Commit with the generated message")
 	proposeCmd.Flags().BoolVar(&dryRunFlag, "dry-run", false, "Preview without committing")
+	proposeCmd.Flags().BoolVar(&debugFlag, "debug", false, "Print debug info (analyzer output + chosen templates)")
 }
 
 func runPropose(cmd *cobra.Command, args []string) error {
@@ -68,6 +70,22 @@ func runPropose(cmd *cobra.Command, args []string) error {
 	templater, err := templater.NewTemplater("templates.json", history)
 	if err != nil {
 		return err
+	}
+
+	if debugFlag {
+		// Print analyzer output
+		fmt.Printf("Analyzer result: %+v\n", commitMessage)
+		// Print available templates/action/topic info from templater
+		if act, tpls := templater.DebugInfo(commitMessage); tpls != nil {
+			fmt.Printf("Resolved action key: %s\n", act)
+			fmt.Printf("Candidate templates (first 10):\n")
+			for i, t := range tpls {
+				if i >= 10 {
+					break
+				}
+				fmt.Printf("  - %s\n", t)
+			}
+		}
 	}
 
 	initialMessage, err := templater.GetMessage(commitMessage)

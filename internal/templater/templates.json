@@ -2,144 +2,172 @@
   "A": {
     "auth": [
       "feat(auth): add new authentication feature",
+      "feat(auth): add support for {item} with secure defaults",
       "feat(auth): introduce {item} for user login",
       "feat(auth): implement {item} to handle token-based access"
     ],
     "api": [
       "feat(api): add new endpoint for {item}",
+      "feat(api): add versioned endpoint to support {purpose}",
       "feat(api): introduce {item} to improve external integration",
       "feat(api): create new route for {purpose}"
     ],
     "db": [
       "feat(db): add new table or schema for {item}",
+      "feat(db): introduce index to optimize {purpose}",
       "feat(db): introduce migration for {item}",
       "feat(db): add relation between {source} and {target}"
     ],
     "user": [
       "feat(user): add functionality to manage {item}",
+      "feat(user): add validation for {item} to prevent bad input",
       "feat(user): create new user feature {item}",
       "feat(user): implement {purpose} for user management"
     ],
     "ui": [
       "feat(ui): add new component {item}",
+      "feat(ui): add responsive styles for {item}",
       "feat(ui): implement {item} to enhance user experience",
       "feat(ui): introduce interactive element for {purpose}"
     ],
     "test": [
       "test({topic}): add new unit tests for {item}",
+      "test({topic}): add table-driven tests for {item}",
       "test({topic}): introduce test coverage for {purpose}",
       "test({topic}): create integration tests for new feature"
     ],
     "config": [
       "chore(config): add configuration for {item}",
+      "chore(config): add validation for new config keys",
       "chore(config): introduce environment variable for {purpose}",
       "chore(config): set up default settings for {module}"
     ],
     "ci": [
       "ci: add new pipeline step for {item}",
+      "ci: add caching step to speed up {purpose}",
       "ci: configure build stage for {purpose}",
       "ci: introduce automated check for {item}"
     ],
     "_default": [
       "feat({topic}): add new functionality",
       "feat({topic}): introduce {item} for {purpose}",
-      "feat: add {item} in {topic}"
+      "feat: add {item} in {topic}",
+      "feat({topic}): implement {item} with tests and docs",
+      "feat({topic}): scaffold {item} to enable {purpose}"
     ]
   },
 
   "M": {
     "auth": [
       "fix(auth): correct issue with {item}",
+      "fix(auth): resolve token expiry handling for {item}",
       "refactor(auth): improve logic in authentication flow",
       "perf(auth): optimize token validation performance"
     ],
     "api": [
       "fix(api): resolve bug in {item}",
+      "fix(api): validate request payload for {item}",
       "refactor(api): update endpoint logic for {purpose}",
       "perf(api): improve response time for {item}"
     ],
     "db": [
       "fix(db): correct schema mismatch for {item}",
+      "fix(db): ensure migration idempotency for {item}",
       "refactor(db): update migration or query structure",
       "perf(db): optimize query performance in {item}"
     ],
     "user": [
       "fix(user): correct user handling in {item}",
+      "fix(user): add missing nil checks for {item}",
       "refactor(user): clean up code for user module",
       "feat(user): enhance {item} with additional validation"
     ],
     "ui": [
       "fix(ui): correct visual issue in {item}",
+      "fix(ui): improve accessibility for {item}",
       "refactor(ui): simplify component structure",
       "perf(ui): improve rendering speed for {component}"
     ],
     "test": [
       "test({topic}): update test cases for {item}",
+      "test({topic}): add regression tests for {item}",
       "test({topic}): improve test coverage for modified code",
       "test({topic}): adjust test assertions for new logic"
     ],
     "config": [
       "chore(config): update environment settings for {purpose}",
+      "chore(config): centralize config loading for {item}",
       "chore(config): change configuration of {item}",
       "fix(config): correct typo or invalid value in {item}"
     ],
     "ci": [
       "ci: modify build configuration for {purpose}",
+      "ci: add test matrix for {item}",
       "ci: update workflow for {item}",
       "ci: refine pipeline step to fix deployment"
     ],
     "_default": [
       "refactor({topic}): update logic or improve readability",
       "fix({topic}): correct issue related to {item}",
-      "perf({topic}): optimize performance of {item}"
+      "perf({topic}): optimize performance of {item}",
+      "refactor({topic}): extract reusable component from {item}"
     ]
   },
 
   "D": {
     "auth": [
       "chore(auth): remove deprecated authentication logic",
+      "chore(auth): drop unused auth middleware",
       "cleanup(auth): delete unused auth handler",
       "refactor(auth): drop legacy token validation"
     ],
     "api": [
       "chore(api): remove obsolete endpoint {item}",
+      "chore(api): remove legacy parameter parsing",
       "cleanup(api): delete outdated route or handler",
       "refactor(api): drop deprecated API function"
     ],
     "db": [
       "chore(db): remove unused migration {item}",
+      "chore(db): drop column no longer used by services",
       "cleanup(db): delete deprecated schema or table",
       "refactor(db): drop old relation between {source} and {target}"
     ],
     "user": [
       "chore(user): remove deprecated function {item}",
+      "chore(user): remove legacy permission code",
       "cleanup(user): delete unused code from user module",
       "refactor(user): remove redundant validation logic"
     ],
     "ui": [
       "chore(ui): remove old UI component {item}",
+      "chore(ui): remove unused style variables",
       "cleanup(ui): delete legacy layout or style",
       "refactor(ui): drop unused assets or widgets"
     ],
     "test": [
       "test({topic}): remove outdated test for {item}",
+      "test({topic}): remove flaky integration test",
       "cleanup({topic}): delete redundant test files",
       "chore({topic}): clean up old test setup"
     ],
     "config": [
       "chore(config): remove unused configuration {item}",
+      "chore(config): deprecate old config keys and add migration notes",
       "cleanup(config): delete obsolete environment variables",
       "refactor(config): drop old default settings"
     ],
     "ci": [
       "ci: remove deprecated workflow {item}",
+      "ci: remove obsolete release step",
       "ci: clean up outdated build configuration",
       "ci: delete unused deployment step"
     ],
     "_default": [
       "chore({topic}): remove deprecated or unused code",
       "cleanup({topic}): delete legacy logic",
-      "refactor({topic}): drop obsolete file or function"
+      "refactor({topic}): drop obsolete file or function",
+      "chore({topic}): tidy imports and update module docs"
     ]
   },
 
