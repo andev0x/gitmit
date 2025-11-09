@@ -31,7 +31,7 @@ var (
 		Use:   "propose",
 		Short: "Propose commit messages from git diff",
 		Long: `Analyze staged changes and suggest commit messages based on the context.
-		
+
 When using --interactive (-i) or --suggestions (-s), multiple suggestions will be shown
 ranked by how well they match the context (file types, changes, purposes).
 
@@ -75,7 +75,7 @@ func runPropose(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(changes) == 0 {
-		return fmt.Errorf("no staged changes")
+		return fmt.Errorf("⚠️ no staged changes")
 	}
 
 	analyzer := analyzer.NewAnalyzer(changes, cfg)
