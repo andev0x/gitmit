@@ -24,9 +24,11 @@
 - **Custom Messages**: Use custom messages with scope and breaking change support
 - **Zero Configuration**: Works out of the box
 - **Lightning Fast**: Complete offline operation
-- **OpenAI Integration**: Optional AI-powered commit message generation
+
 
 ## Installation
+
+Gitmit is designed to run everywhere.
 
 ### From Releases
 
@@ -38,8 +40,28 @@ Download the latest release for your platform from the [releases page](https://g
 git clone https://github.com/andev0x/gitmit.git
 cd gitmit
 go build -o gitmit
-./gitmit
 ```
+
+After building, you can install `gitmit` to your system's PATH.
+
+#### Linux (Arch Linux Example)
+
+To install `gitmit` to `/usr/local/bin`:
+
+```bash
+sudo mv gitmit /usr/local/bin
+```
+
+#### macOS
+
+To determine where `go` binaries are typically installed on your system, use `which go`. This will help you decide where to move the `gitmit` executable. For example, if `which go` returns `/usr/local/bin/go`, you might move `gitmit` there:
+
+```bash
+sudo mv gitmit /Users/username/go/bin
+```
+
+Alternatively, you can add the directory containing the `gitmit` executable to your shell's PATH environment variable.
+
 
 ## Usage
 
@@ -195,7 +217,7 @@ Offers:
 
 Gitmit works out of the box with zero configuration. However, you can enhance it with:
 
-### OpenAI Integration
+### OpenAI Integration (pending)
 Set your OpenAI API key for enhanced commit message generation:
 ```bash
 export OPENAI_API_KEY="your-api-key"
