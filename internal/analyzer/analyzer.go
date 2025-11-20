@@ -110,6 +110,9 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int) *CommitMessage {
 }
 
 func (a *Analyzer) determineAction(change *parser.Change) string {
+	if change.FileExtension == "md" {
+		return "docs"
+	}
 	switch change.Action {
 	case "A":
 		// Enhanced rule: detect added tests
@@ -118,6 +121,10 @@ func (a *Analyzer) determineAction(change *parser.Change) string {
 		}
 		return "feat"
 	case "M":
+		// Enhanced rule: detect new features in modified files
+		if strings.Contains(change.Diff, "add") || strings.Contains(change.Diff, "implement") || strings.Contains(change.Diff, "introduce") {
+			return "feat"
+		}
 		// Enhanced rule: detect increased logging
 		if a.detectIncreasedLogging(change.Diff) {
 			return "feat"
@@ -143,7 +150,7 @@ func (a *Analyzer) determineAction(change *parser.Change) string {
 }
 
 func (a *Analyzer) determineTopic(path string) string {
-	// Apply custom topic mappings from config
+	// Apply custom topic mappings from config first
 	for pattern, topic := range a.config.TopicMappings {
 		if strings.Contains(path, pattern) {
 			return topic
@@ -151,12 +158,23 @@ func (a *Analyzer) determineTopic(path string) string {
 	}
 
 	parts := strings.Split(filepath.Dir(path), string(filepath.Separator))
-	if len(parts) > 0 && parts[0] != "." {
-		// Example: "internal/analyzer" -> "analyzer"
-		if len(parts) > 1 && parts[0] == "internal" {
-			return parts[1]
+	if len(parts) > 0 {
+		// Prioritize "internal" or "pkg" subdirectories
+		for i, p := range parts {
+			if (p == "internal" || p == "pkg") && i+1 < len(parts) {
+				return parts[i+1]
+			}
 		}
-		return parts[0]
+		// Fallback to the most specific directory name that is not a generic name
+		for i := len(parts) - 1; i >= 0; i-- {
+			if parts[i] != "." && parts[i] != "src" {
+				return parts[i]
+			}
+		}
+		// If no specific topic is found, return the top-level directory
+		if parts[0] != "." {
+			return parts[0]
+		}
 	}
 	return "core"
 }
@@ -174,28 +192,64 @@ func (a *Analyzer) determinePurpose(diff string) string {
 	}
 
 	keywords := map[string]string{
-		"login":      "authentication",
-		"validate":   "validation",
-		"query":      "database query",
-		"cache":      "caching",
-		"refactor":   "code restructuring",
-		"logging":    "logging",
-		"docs":       "documentation",
-		"middleware": "middleware",
-		"test":       "testing",
-		"config":     "configuration",
-		"ci":         "ci/cd",
-		"log":        "logging", "sql": "database logic",
-		"gorm":     "database logic",
-		"feat":     "new feature",
-		"bug":      "bug fix",
-		"fix":      "bug fix",
-		"cleanup":  "code cleanup",
-		"perf":     "performance improvement",
-		"security": "security update",
-		"dep":      "dependency update",
-		"build":    "build system",
-		"style":    "code style",
+		"login":       "authentication",
+		"auth":        "authentication",
+		"user":        "user management",
+		"validate":    "validation",
+		"validation":  "validation",
+		"query":       "database query",
+		"database":    "database operations",
+		"cache":       "caching",
+		"caching":     "caching",
+		"refactor":    "code restructuring",
+		"logging":     "logging",
+		"logger":      "logging",
+		"docs":        "documentation",
+		"readme":      "documentation",
+		"middleware":  "middleware",
+		"test":        "testing",
+		"tests":       "testing",
+		"config":      "configuration",
+		"ci":          "ci/cd",
+		"log":         "logging",
+		"sql":         "database logic",
+		"gorm":        "database logic",
+		"feat":        "new feature",
+		"bug":         "bug fix",
+		"fix":         "bug fix",
+		"hotfix":      "bug fix",
+		"cleanup":     "code cleanup",
+		"perf":        "performance improvement",
+		"performance": "performance improvement",
+		"security":    "security update",
+		"dep":         "dependency update",
+		"dependency":  "dependency update",
+		"build":       "build system",
+		"style":       "code style",
+		"serialize":   "serialization",
+		"deserialize": "deserialization",
+		"json":        "data handling",
+		"xml":         "data handling",
+		"async":       "asynchronous operations",
+		"await":       "asynchronous operations",
+		"concurrent":  "concurrency",
+		"parallel":    "parallel processing",
+		"api":         "api endpoints",
+		"endpoint":    "api endpoints",
+		"route":       "routing",
+		"ui":          "user interface",
+		"frontend":    "user interface",
+		"backend":     "backend logic",
+		"server":      "server logic",
+		"client":      "client logic",
+		"docker":      "docker configuration",
+		"kubernetes":  "kubernetes configuration",
+		"k8s":         "kubernetes configuration",
+		"aws":         "aws integration",
+		"gcp":         "gcp integration",
+		"azure":       "azure integration",
+		"error":       "error handling",
+		"exception":   "error handling",
 	}
 
 	for keyword, purpose := range keywords {
@@ -207,6 +261,21 @@ func (a *Analyzer) determinePurpose(diff string) string {
 }
 
 func (a *Analyzer) applySmartFallback(msg *CommitMessage) *CommitMessage {
+	// If a new file is created, suggest "feat"
+	if len(a.changes) == 1 && a.changes[0].Action == "A" {
+		return &CommitMessage{Action: "feat", Topic: a.determineTopic(a.changes[0].File), Item: a.determineItem(a.changes[0].File), Purpose: "initial implementation"}
+	}
+
+	// If a file is deleted, suggest "chore" or "refactor"
+	if len(a.changes) == 1 && a.changes[0].Action == "D" {
+		return &CommitMessage{Action: "chore", Topic: a.determineTopic(a.changes[0].File), Item: a.determineItem(a.changes[0].File), Purpose: "remove unused file"}
+	}
+
+	// If a test file is modified, suggest "test"
+	if len(a.changes) == 1 && strings.HasSuffix(a.changes[0].File, "_test.go") {
+		return &CommitMessage{Action: "test", Topic: a.determineTopic(a.changes[0].File), Item: a.determineItem(a.changes[0].File), Purpose: "update tests"}
+	}
+
 	// If more than 5 files are both added and deleted -> suggest “refactor(core): restructure project”.
 	if len(a.changes) > 5 && msg.TotalAdded > 0 && msg.TotalRemoved > 0 && (float64(msg.TotalAdded+msg.TotalRemoved)/float64(len(a.changes))) > 10 { // Heuristic for significant changes across many files
 		return &CommitMessage{Action: "refactor", Topic: "core", Purpose: "restructure project"}
