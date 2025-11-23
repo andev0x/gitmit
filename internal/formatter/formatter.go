@@ -3,7 +3,6 @@ package formatter
 import (
 	"fmt"
 	"strings"
-	"unicode"
 )
 
 // Formatter is responsible for applying final formatting to commit messages
@@ -17,11 +16,11 @@ func NewFormatter() *Formatter {
 // FormatMessage applies formatting rules to the commit message
 func (f *Formatter) FormatMessage(msg string, isMajor bool) string {
 	// Capitalize the first letter
-	if len(msg) > 0 {
+	/* if len(msg) > 0 {
 		r := []rune(msg)
 		r[0] = unicode.ToUpper(r[0])
 		msg = string(r)
-	}
+	} */
 
 	// Remove redundant phrases
 	msg = strings.ReplaceAll(msg, "add add new", "add new")
