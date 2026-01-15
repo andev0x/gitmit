@@ -37,6 +37,7 @@ Thumbs.db
 gitmit
 dist/
 build/
+/bin/
 
 # Env
 .env
