@@ -200,8 +200,6 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 
 	return formattedMsg, nil
 }
-<<<<<<< HEAD
-=======
 
 // scoreTemplate scores a template based on how well it matches the commit message context
 func (t *Templater) scoreTemplate(template string, msg *analyzer.CommitMessage) float64 {
@@ -264,4 +262,3 @@ func (t *Templater) scoreTemplate(template string, msg *analyzer.CommitMessage) 
 
 	return score
 }
->>>>>>> 1028df8 (fix(config): updated imports)

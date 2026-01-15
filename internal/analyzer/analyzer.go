@@ -11,22 +11,6 @@ import (
 
 // CommitMessage represents the analyzed commit message components
 type CommitMessage struct {
-<<<<<<< HEAD
-	Action         string
-	Topic          string
-	Item           string
-	Purpose        string
-	Scope          string
-	IsMajor        bool
-	TotalAdded     int
-	TotalRemoved   int
-	FileExtensions []string
-	RenamedFiles   []*parser.Change
-	CopiedFiles    []*parser.Change
-	IsDocsOnly     bool
-	IsConfigOnly   bool
-	IsDepsOnly     bool
-=======
 	Action            string
 	Topic             string
 	Item              string
@@ -45,7 +29,6 @@ type CommitMessage struct {
 	DetectedStructs   []string
 	DetectedMethods   []string
 	ChangePatterns    []string
->>>>>>> 1028df8 (fix(config): updated imports)
 }
 
 // Analyzer is responsible for analyzing git changes and generating commit message components
@@ -616,8 +599,6 @@ func uniqueStrings(s []string) []string {
 	}
 	return result
 }
-<<<<<<< HEAD
-=======
 
 // detectFunctions extracts function names from diff
 func (a *Analyzer) detectFunctions(diff string) []string {
@@ -773,4 +754,3 @@ func (a *Analyzer) detectChangePatterns(change *parser.Change) []string {
 
 	return patterns
 }
->>>>>>> 1028df8 (fix(config): updated imports)
