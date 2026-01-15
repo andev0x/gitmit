@@ -38,6 +38,8 @@ gitmit
 dist/
 build/
 /bin/
+.commit_suggest_history.json
+
 
 # Env
 .env
