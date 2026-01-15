@@ -5,91 +5,71 @@
       "feat(auth): add support for {item} with secure defaults",
       "feat(auth): introduce {item} for user login",
       "feat(auth): implement {item} to handle token-based access",
-<<<<<<< HEAD
-      "feat(auth): add {item} to improve security"
-=======
+      "feat(auth): add {item} to improve security",
       "feat(auth): add {item} for secure authentication",
       "feat(auth): implement token validation in {item}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "api": [
       "feat(api): add new endpoint for {item}",
       "feat(api): add versioned endpoint to support {purpose}",
       "feat(api): introduce {item} to improve external integration",
       "feat(api): create new route for {purpose}",
-<<<<<<< HEAD
-      "feat(api): implement {item} endpoint"
-=======
+      "feat(api): implement {item} endpoint",
       "feat(api): implement {item} handler",
       "feat(api): add REST endpoint for {purpose}",
       "feat(api): create {item} API integration"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "db": [
       "feat(db): add new table or schema for {item}",
       "feat(db): introduce index to optimize {purpose}",
       "feat(db): introduce migration for {item}",
       "feat(db): add relation between {source} and {target}",
-<<<<<<< HEAD
-      "feat(db): add {item} to the database"
-=======
+      "feat(db): add {item} to the database",
       "feat(db): create database model for {item}",
       "feat(db): implement {item} query functionality"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "user": [
       "feat(user): add functionality to manage {item}",
       "feat(user): add validation for {item} to prevent bad input",
       "feat(user): create new user feature {item}",
       "feat(user): implement {purpose} for user management",
-<<<<<<< HEAD
-      "feat(user): add {item} to the user profile"
-=======
+      "feat(user): add {item} to the user profile",
       "feat(user): add {item} for user operations"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "ui": [
       "feat(ui): add new component {item}",
       "feat(ui): add responsive styles for {item}",
       "feat(ui): implement {item} to enhance user experience",
       "feat(ui): introduce interactive element for {purpose}",
-<<<<<<< HEAD
-      "feat(ui): add {item} to the user interface"
-=======
+      "feat(ui): add {item} to the user interface",
       "feat(ui): create {item} interface component"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "test": [
       "test({topic}): add new unit tests for {item}",
       "test({topic}): add table-driven tests for {item}",
       "test({topic}): introduce test coverage for {purpose}",
       "test({topic}): create integration tests for new feature",
-<<<<<<< HEAD
-      "test({topic}): add tests for {item}"
-=======
+      "test({topic}): add tests for {item}",
       "test({topic}): add test cases for {item}",
       "test({topic}): implement tests for {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "config": [
       "chore(config): add configuration for {item}",
       "chore(config): add validation for new config keys",
       "chore(config): introduce environment variable for {purpose}",
       "chore(config): set up default settings for {module}",
-<<<<<<< HEAD
-      "chore(config): configure {item}"
-=======
+      "chore(config): configure {item}",
       "config: add settings for {item}",
       "config: configure {item} for {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "ci": [
       "ci: add new pipeline step for {item}",
       "ci: add caching step to speed up {purpose}",
       "ci: configure build stage for {purpose}",
       "ci: introduce automated check for {item}",
-<<<<<<< HEAD
-      "ci: add {item} to the ci pipeline"
+      "ci: add {item} to the ci pipeline",
+      "ci: add workflow for {purpose}",
+      "ci: implement {item} deployment step"
     ],
     "logging": [
       "feat(logging): add logging for {item}",
@@ -105,43 +85,16 @@
       "feat(validation): add validation for {item}",
       "feat(validation): introduce input validation for {purpose}",
       "feat(validation): implement request body validation for {item}"
-=======
-      "ci: add workflow for {purpose}",
-      "ci: implement {item} deployment step"
-    ],
-    "handler": [
-      "feat(handler): add {item} request handler",
-      "feat(handler): implement {item} for {purpose}",
-      "feat(handler): create handler for {purpose}"
-    ],
-    "middleware": [
-      "feat(middleware): add {item} middleware",
-      "feat(middleware): implement {purpose} middleware",
-      "feat(middleware): create middleware for {purpose}"
-    ],
-    "service": [
-      "feat(service): add {item} service",
-      "feat(service): implement {purpose} in {item}",
-      "feat(service): create service layer for {purpose}"
-    ],
-    "util": [
-      "feat(util): add utility function {item}",
-      "feat(util): implement helper for {purpose}",
-      "feat(util): create {item} utility"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "_default": [
       "feat({topic}): add new functionality",
       "feat({topic}): introduce {item} for {purpose}",
       "feat: add {item} in {topic}",
-<<<<<<< HEAD
       "feat({topic}): implement {item} with tests and docs",
       "feat({topic}): scaffold {item} to enable {purpose}",
-      "feat({topic}): add {item}"
-=======
+      "feat({topic}): add {item}",
       "feat({topic}): implement {item}",
       "feat({topic}): create {item} for {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ]
   },
 
@@ -151,95 +104,72 @@
       "fix(auth): resolve token expiry handling for {item}",
       "refactor(auth): improve logic in authentication flow",
       "perf(auth): optimize token validation performance",
-<<<<<<< HEAD
-      "fix(auth): patch security vulnerability in {item}"
-=======
+      "fix(auth): patch security vulnerability in {item}",
       "fix(auth): resolve authentication bug in {item}",
       "refactor(auth): enhance {item} for better security",
       "fix(auth): correct {purpose} in authentication"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "api": [
       "fix(api): resolve bug in {item}",
       "fix(api): validate request payload for {item}",
       "refactor(api): update endpoint logic for {purpose}",
       "perf(api): improve response time for {item}",
-<<<<<<< HEAD
-      "fix(api): handle error case in {item}"
-=======
+      "fix(api): handle error case in {item}",
       "fix(api): correct error handling in {item}",
       "refactor(api): restructure {item} endpoint",
       "perf(api): optimize {item} performance"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "db": [
       "fix(db): correct schema mismatch for {item}",
       "fix(db): ensure migration idempotency for {item}",
       "refactor(db): update migration or query structure",
       "perf(db): optimize query performance in {item}",
-<<<<<<< HEAD
-      "fix(db): resolve data integrity issue in {item}"
-=======
+      "fix(db): resolve data integrity issue in {item}",
       "fix(db): resolve database issue in {item}",
       "refactor(db): improve {purpose} query logic"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "user": [
       "fix(user): correct user handling in {item}",
       "fix(user): add missing nil checks for {item}",
       "refactor(user): clean up code for user module",
       "feat(user): enhance {item} with additional validation",
-<<<<<<< HEAD
-      "fix(user): resolve bug in user profile"
-=======
+      "fix(user): resolve bug in user profile",
       "fix(user): resolve issue with {purpose}",
       "refactor(user): improve {item} implementation"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "ui": [
       "fix(ui): correct visual issue in {item}",
       "fix(ui): improve accessibility for {item}",
       "refactor(ui): simplify component structure",
       "perf(ui): improve rendering speed for {component}",
-<<<<<<< HEAD
-      "fix(ui): resolve rendering issue in {item}"
-=======
+      "fix(ui): resolve rendering issue in {item}",
       "fix(ui): resolve display bug in {item}",
       "style(ui): adjust formatting in {item}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "test": [
       "test({topic}): update test cases for {item}",
       "test({topic}): add regression tests for {item}",
       "test({topic}): improve test coverage for modified code",
       "test({topic}): adjust test assertions for new logic",
-<<<<<<< HEAD
-      "test({topic}): fix failing tests for {item}"
-=======
+      "test({topic}): fix failing tests for {item}",
       "test({topic}): fix failing tests in {item}",
       "test({topic}): enhance test suite for {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "config": [
       "chore(config): update environment settings for {purpose}",
       "chore(config): centralize config loading for {item}",
       "chore(config): change configuration of {item}",
       "fix(config): correct typo or invalid value in {item}",
-<<<<<<< HEAD
-      "chore(config): update configuration for {item}"
-=======
+      "chore(config): update configuration for {item}",
       "config: update settings for {purpose}",
       "config: modify {item} configuration"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "ci": [
       "ci: modify build configuration for {purpose}",
       "ci: add test matrix for {item}",
       "ci: update workflow for {item}",
       "ci: refine pipeline step to fix deployment",
-<<<<<<< HEAD
-      "ci: fix issue in the ci pipeline"
-=======
+      "ci: fix issue in the ci pipeline",
       "ci: improve {purpose} in pipeline",
       "ci: fix build issue in {item}"
     ],
@@ -268,19 +198,15 @@
       "fix(analyzer): correct analysis logic in {item}",
       "refactor(analyzer): enhance {purpose} detection",
       "perf(analyzer): optimize analysis performance"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ],
     "_default": [
       "refactor({topic}): update logic or improve readability",
       "fix({topic}): correct issue related to {item}",
       "perf({topic}): optimize performance of {item}",
-<<<<<<< HEAD
       "refactor({topic}): extract reusable component from {item}",
-      "fix({topic}): resolve bug in {item}"
-=======
+      "fix({topic}): resolve bug in {item}",
       "refactor({topic}): improve {item} implementation",
       "fix({topic}): resolve bug in {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ]
   },
 
@@ -354,12 +280,9 @@
       "chore({topic}): remove deprecated or unused code",
       "cleanup({topic}): delete legacy logic",
       "refactor({topic}): drop obsolete file or function",
-<<<<<<< HEAD
       "chore({topic}): tidy imports and update module docs",
-      "chore({topic}): remove {item}"
-=======
+      "chore({topic}): remove {item}",
       "chore({topic}): remove unused {item}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ]
   },
 
@@ -368,12 +291,9 @@
       "refactor({topic}): rename {source} to {target}",
       "refactor({topic}): move {source} to {target}",
       "refactor({topic}): restructure project modules",
-<<<<<<< HEAD
-      "refactor({topic}): rename {item}"
-=======
+      "refactor({topic}): rename {item}",
       "refactor: reorganize {item} structure",
       "refactor({topic}): relocate {item} for better organization"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ]
   },
 
@@ -382,10 +302,8 @@
       "docs({topic}): add or update documentation for {item}",
       "docs({topic}): clarify usage of {item}",
       "docs({topic}): improve explanation and examples",
-<<<<<<< HEAD
       "docs({topic}): update README.md",
-      "docs: update documentation"
-=======
+      "docs: update documentation",
       "docs: update documentation for {purpose}",
       "docs({topic}): enhance {item} documentation"
     ]
@@ -424,7 +342,6 @@
       "test({topic}): improve test coverage for {purpose}",
       "test: add test cases for {item}",
       "test({topic}): enhance testing for {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ]
   },
 
@@ -433,13 +350,10 @@
       "chore: general maintenance and cleanup",
       "style({topic}): format code for consistency",
       "build({topic}): update dependencies or build scripts",
-<<<<<<< HEAD
       "chore: update dependencies",
-      "style: format code"
-=======
+      "style: format code",
       "chore({topic}): update {item}",
       "chore: improve {purpose}"
->>>>>>> 1cb359d (feat(suggestion): add offline intelligent commit message engine)
     ]
   }
 }
