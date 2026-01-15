@@ -3,47 +3,84 @@
     "auth": [
       "feat(auth): add new authentication feature",
       "feat(auth): introduce {item} for user login",
-      "feat(auth): implement {item} to handle token-based access"
+      "feat(auth): implement {item} to handle token-based access",
+      "feat(auth): add {item} for secure authentication",
+      "feat(auth): implement token validation in {item}"
     ],
     "api": [
       "feat(api): add new endpoint for {item}",
       "feat(api): introduce {item} to improve external integration",
-      "feat(api): create new route for {purpose}"
+      "feat(api): create new route for {purpose}",
+      "feat(api): implement {item} handler",
+      "feat(api): add REST endpoint for {purpose}",
+      "feat(api): create {item} API integration"
     ],
     "db": [
       "feat(db): add new table or schema for {item}",
       "feat(db): introduce migration for {item}",
-      "feat(db): add relation between {source} and {target}"
+      "feat(db): add relation between {source} and {target}",
+      "feat(db): create database model for {item}",
+      "feat(db): implement {item} query functionality"
     ],
     "user": [
       "feat(user): add functionality to manage {item}",
       "feat(user): create new user feature {item}",
-      "feat(user): implement {purpose} for user management"
+      "feat(user): implement {purpose} for user management",
+      "feat(user): add {item} for user operations"
     ],
     "ui": [
       "feat(ui): add new component {item}",
       "feat(ui): implement {item} to enhance user experience",
-      "feat(ui): introduce interactive element for {purpose}"
+      "feat(ui): introduce interactive element for {purpose}",
+      "feat(ui): create {item} interface component"
     ],
     "test": [
       "test({topic}): add new unit tests for {item}",
       "test({topic}): introduce test coverage for {purpose}",
-      "test({topic}): create integration tests for new feature"
+      "test({topic}): create integration tests for new feature",
+      "test({topic}): add test cases for {item}",
+      "test({topic}): implement tests for {purpose}"
     ],
     "config": [
       "chore(config): add configuration for {item}",
       "chore(config): introduce environment variable for {purpose}",
-      "chore(config): set up default settings for {module}"
+      "chore(config): set up default settings for {module}",
+      "config: add settings for {item}",
+      "config: configure {item} for {purpose}"
     ],
     "ci": [
       "ci: add new pipeline step for {item}",
       "ci: configure build stage for {purpose}",
-      "ci: introduce automated check for {item}"
+      "ci: introduce automated check for {item}",
+      "ci: add workflow for {purpose}",
+      "ci: implement {item} deployment step"
+    ],
+    "handler": [
+      "feat(handler): add {item} request handler",
+      "feat(handler): implement {item} for {purpose}",
+      "feat(handler): create handler for {purpose}"
+    ],
+    "middleware": [
+      "feat(middleware): add {item} middleware",
+      "feat(middleware): implement {purpose} middleware",
+      "feat(middleware): create middleware for {purpose}"
+    ],
+    "service": [
+      "feat(service): add {item} service",
+      "feat(service): implement {purpose} in {item}",
+      "feat(service): create service layer for {purpose}"
+    ],
+    "util": [
+      "feat(util): add utility function {item}",
+      "feat(util): implement helper for {purpose}",
+      "feat(util): create {item} utility"
     ],
     "_default": [
       "feat({topic}): add new functionality",
       "feat({topic}): introduce {item} for {purpose}",
-      "feat: add {item} in {topic}"
+      "feat: add {item} in {topic}",
+      "feat({topic}): implement {item}",
+      "feat({topic}): create {item} for {purpose}"
     ]
   },
 
@@ -51,47 +88,93 @@
     "auth": [
       "fix(auth): correct issue with {item}",
       "refactor(auth): improve logic in authentication flow",
-      "perf(auth): optimize token validation performance"
+      "perf(auth): optimize token validation performance",
+      "fix(auth): resolve authentication bug in {item}",
+      "refactor(auth): enhance {item} for better security",
+      "fix(auth): correct {purpose} in authentication"
     ],
     "api": [
       "fix(api): resolve bug in {item}",
       "refactor(api): update endpoint logic for {purpose}",
-      "perf(api): improve response time for {item}"
+      "perf(api): improve response time for {item}",
+      "fix(api): correct error handling in {item}",
+      "refactor(api): restructure {item} endpoint",
+      "perf(api): optimize {item} performance"
     ],
     "db": [
       "fix(db): correct schema mismatch for {item}",
       "refactor(db): update migration or query structure",
-      "perf(db): optimize query performance in {item}"
+      "perf(db): optimize query performance in {item}",
+      "fix(db): resolve database issue in {item}",
+      "refactor(db): improve {purpose} query logic"
     ],
     "user": [
       "fix(user): correct user handling in {item}",
       "refactor(user): clean up code for user module",
-      "feat(user): enhance {item} with additional validation"
+      "feat(user): enhance {item} with additional validation",
+      "fix(user): resolve issue with {purpose}",
+      "refactor(user): improve {item} implementation"
     ],
     "ui": [
       "fix(ui): correct visual issue in {item}",
       "refactor(ui): simplify component structure",
-      "perf(ui): improve rendering speed for {component}"
+      "perf(ui): improve rendering speed for {component}",
+      "fix(ui): resolve display bug in {item}",
+      "style(ui): adjust formatting in {item}"
     ],
     "test": [
       "test({topic}): update test cases for {item}",
       "test({topic}): improve test coverage for modified code",
-      "test({topic}): adjust test assertions for new logic"
+      "test({topic}): adjust test assertions for new logic",
+      "test({topic}): fix failing tests in {item}",
+      "test({topic}): enhance test suite for {purpose}"
     ],
     "config": [
       "chore(config): update environment settings for {purpose}",
       "chore(config): change configuration of {item}",
-      "fix(config): correct typo or invalid value in {item}"
+      "fix(config): correct typo or invalid value in {item}",
+      "config: update settings for {purpose}",
+      "config: modify {item} configuration"
     ],
     "ci": [
       "ci: modify build configuration for {purpose}",
       "ci: update workflow for {item}",
-      "ci: refine pipeline step to fix deployment"
+      "ci: refine pipeline step to fix deployment",
+      "ci: improve {purpose} in pipeline",
+      "ci: fix build issue in {item}"
+    ],
+    "handler": [
+      "fix(handler): resolve bug in {item} handler",
+      "refactor(handler): improve {item} logic",
+      "perf(handler): optimize {item} performance",
+      "fix(handler): correct error handling in {item}"
+    ],
+    "middleware": [
+      "fix(middleware): resolve issue in {item}",
+      "refactor(middleware): improve {purpose} middleware",
+      "perf(middleware): optimize {item} performance"
+    ],
+    "service": [
+      "fix(service): correct bug in {item} service",
+      "refactor(service): improve {purpose} implementation",
+      "perf(service): optimize {item} service performance"
+    ],
+    "parser": [
+      "fix(parser): resolve parsing issue in {item}",
+      "refactor(parser): improve {purpose} parsing logic",
+      "perf(parser): optimize parsing performance"
+    ],
+    "analyzer": [
+      "fix(analyzer): correct analysis logic in {item}",
+      "refactor(analyzer): enhance {purpose} detection",
+      "perf(analyzer): optimize analysis performance"
     ],
     "_default": [
       "refactor({topic}): update logic or improve readability",
       "fix({topic}): correct issue related to {item}",
-      "perf({topic}): optimize performance of {item}"
+      "perf({topic}): optimize performance of {item}",
+      "refactor({topic}): improve {item} implementation",
+      "fix({topic}): resolve bug in {purpose}"
     ]
   },
 
@@ -99,47 +182,65 @@
     "auth": [
       "chore(auth): remove deprecated authentication logic",
       "cleanup(auth): delete unused auth handler",
-      "refactor(auth): drop legacy token validation"
+      "refactor(auth): drop legacy token validation",
+      "chore(auth): remove obsolete {item}"
     ],
     "api": [
       "chore(api): remove obsolete endpoint {item}",
       "cleanup(api): delete outdated route or handler",
-      "refactor(api): drop deprecated API function"
+      "refactor(api): drop deprecated API function",
+      "chore(api): remove unused {item} endpoint"
     ],
     "db": [
       "chore(db): remove unused migration {item}",
       "cleanup(db): delete deprecated schema or table",
-      "refactor(db): drop old relation between {source} and {target}"
+      "refactor(db): drop old relation between {source} and {target}",
+      "chore(db): remove obsolete database {item}"
     ],
     "user": [
       "chore(user): remove deprecated function {item}",
       "cleanup(user): delete unused code from user module",
-      "refactor(user): remove redundant validation logic"
+      "refactor(user): remove redundant validation logic",
+      "chore(user): drop obsolete {item}"
     ],
     "ui": [
       "chore(ui): remove old UI component {item}",
       "cleanup(ui): delete legacy layout or style",
-      "refactor(ui): drop unused assets or widgets"
+      "refactor(ui): drop unused assets or widgets",
+      "chore(ui): remove obsolete {item} component"
     ],
     "test": [
       "test({topic}): remove outdated test for {item}",
       "cleanup({topic}): delete redundant test files",
-      "chore({topic}): clean up old test setup"
+      "chore({topic}): clean up old test setup",
+      "test({topic}): remove obsolete tests"
     ],
     "config": [
       "chore(config): remove unused configuration {item}",
       "cleanup(config): delete obsolete environment variables",
-      "refactor(config): drop old default settings"
+      "refactor(config): drop old default settings",
+      "chore(config): remove deprecated {item} setting"
     ],
     "ci": [
       "ci: remove deprecated workflow {item}",
       "ci: clean up outdated build configuration",
-      "ci: delete unused deployment step"
+      "ci: delete unused deployment step",
+      "ci: remove obsolete {item} from pipeline"
+    ],
+    "handler": [
+      "chore(handler): remove unused {item} handler",
+      "cleanup(handler): delete deprecated handler logic",
+      "refactor(handler): drop obsolete {item}"
+    ],
+    "service": [
+      "chore(service): remove unused {item} service",
+      "cleanup(service): delete deprecated service logic"
     ],
     "_default": [
       "chore({topic}): remove deprecated or unused code",
       "cleanup({topic}): delete legacy logic",
-      "refactor({topic}): drop obsolete file or function"
+      "refactor({topic}): drop obsolete file or function",
+      "chore({topic}): remove unused {item}"
     ]
   },
 
@@ -147,7 +248,9 @@
     "_default": [
       "refactor({topic}): rename {source} to {target}",
       "refactor({topic}): move {source} to {target}",
-      "refactor({topic}): restructure project modules"
+      "refactor({topic}): restructure project modules",
+      "refactor: reorganize {item} structure",
+      "refactor({topic}): relocate {item} for better organization"
     ]
   },
 
@@ -155,7 +258,45 @@
     "_default": [
       "docs({topic}): add or update documentation for {item}",
       "docs({topic}): clarify usage of {item}",
-      "docs({topic}): improve explanation and examples"
+      "docs({topic}): improve explanation and examples",
+      "docs: update documentation for {purpose}",
+      "docs({topic}): enhance {item} documentation"
+    ]
+  },
+
+  "SECURITY": {
+    "_default": [
+      "security({topic}): fix vulnerability in {item}",
+      "security({topic}): enhance security for {purpose}",
+      "security: address security issue in {item}",
+      "security({topic}): patch security flaw"
+    ]
+  },
+
+  "PERF": {
+    "_default": [
+      "perf({topic}): optimize {item} performance",
+      "perf({topic}): improve {purpose} efficiency",
+      "perf: enhance performance of {item}",
+      "perf({topic}): optimize {purpose} execution"
+    ]
+  },
+
+  "STYLE": {
+    "_default": [
+      "style({topic}): format code for consistency",
+      "style({topic}): adjust formatting in {item}",
+      "style: improve code formatting",
+      "style({topic}): apply consistent styling"
+    ]
+  },
+
+  "TEST": {
+    "_default": [
+      "test({topic}): add tests for {item}",
+      "test({topic}): improve test coverage for {purpose}",
+      "test: add test cases for {item}",
+      "test({topic}): enhance testing for {purpose}"
     ]
   },
 
@@ -163,7 +304,9 @@
     "_default": [
       "chore: general maintenance and cleanup",
       "style({topic}): format code for consistency",
-      "build({topic}): update dependencies or build scripts"
+      "build({topic}): update dependencies or build scripts",
+      "chore({topic}): update {item}",
+      "chore: improve {purpose}"
     ]
   }
 }

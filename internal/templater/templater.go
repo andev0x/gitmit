@@ -76,7 +76,40 @@ func NewTemplater(templateFile string, hist *history.CommitHistory) (*Templater,
 
 // GetMessage selects and formats a commit message
 func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
+	// Map action to uppercase for template lookup
 	actionUpper := strings.ToUpper(msg.Action)
+
+	// Handle special actions that might not match template keys
+	switch actionUpper {
+	case "FEAT":
+		actionUpper = "A" // Map to Add templates
+	case "FIX", "REFACTOR", "PERF":
+		actionUpper = "M" // Map to Modify templates
+	case "CHORE":
+		if msg.Action == "chore" {
+			// Check if it's a deletion
+			deletions := 0
+			for _, change := range msg.RenamedFiles {
+				if change.Action == "D" {
+					deletions++
+				}
+			}
+			if deletions > 0 {
+				actionUpper = "D"
+			} else {
+				actionUpper = "MISC"
+			}
+		}
+	case "SECURITY":
+		actionUpper = "SECURITY"
+	case "STYLE":
+		actionUpper = "STYLE"
+	case "TEST":
+		actionUpper = "TEST"
+	case "DOCS":
+		actionUpper = "DOC"
+	}
+
 	actionTemplates, ok := t.templates[actionUpper]
 	if !ok {
 		// Fallback to MISC for unknown actions
@@ -104,33 +137,58 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 		target = msg.RenamedFiles[0].Target
 	}
 
+	// Enhanced item selection based on detected structures
+	item := msg.Item
+	if len(msg.DetectedFunctions) > 0 {
+		item = msg.DetectedFunctions[0]
+	} else if len(msg.DetectedStructs) > 0 {
+		item = msg.DetectedStructs[0]
+	} else if len(msg.DetectedMethods) > 0 {
+		item = msg.DetectedMethods[0]
+	}
+
 	replacer := strings.NewReplacer(
 		"{topic}", msg.Topic,
-		"{item}", msg.Item,
+		"{item}", item,
 		"{purpose}", msg.Purpose,
 		"{source}", source,
 		"{target}", target,
 	)
 
-	// Select a random template, avoiding recent duplicates
-	var selectedTemplate string
-	shuffledTemplates := make([]string, len(topicTemplates))
-	copy(shuffledTemplates, topicTemplates)
-	rand.Shuffle(len(shuffledTemplates), func(i, j int) {
-		shuffledTemplates[i], shuffledTemplates[j] = shuffledTemplates[j], shuffledTemplates[i]
-	})
+	// Score and select the best template
+	type scoredTemplate struct {
+		template string
+		score    float64
+	}
 
-	for _, tmpl := range shuffledTemplates {
-		potentialMessage := replacer.Replace(tmpl)
+	var scoredTemplates []scoredTemplate
+	for _, tmpl := range topicTemplates {
+		score := t.scoreTemplate(tmpl, msg)
+		scoredTemplates = append(scoredTemplates, scoredTemplate{template: tmpl, score: score})
+	}
+
+	// Sort templates by score (highest first)
+	for i := 0; i < len(scoredTemplates); i++ {
+		for j := i + 1; j < len(scoredTemplates); j++ {
+			if scoredTemplates[j].score > scoredTemplates[i].score {
+				scoredTemplates[i], scoredTemplates[j] = scoredTemplates[j], scoredTemplates[i]
+			}
+		}
+	}
+
+	// Select the best template that's not in recent history
+	var selectedTemplate string
+	for _, st := range scoredTemplates {
+		potentialMessage := replacer.Replace(st.template)
 		if !t.history.Contains(potentialMessage) {
-			selectedTemplate = tmpl
+			selectedTemplate = st.template
 			break
 		}
 	}
 
 	if selectedTemplate == "" {
-		// If all templates are recent duplicates, just pick a random one
-		selectedTemplate = topicTemplates[rand.Intn(len(topicTemplates))]
+		// If all templates are recent duplicates, pick the highest scored one
+		selectedTemplate = scoredTemplates[0].template
 	}
 
 	formattedMsg := replacer.Replace(selectedTemplate)
@@ -142,3 +200,68 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 
 	return formattedMsg, nil
 }
+<<<<<<< HEAD
+=======
+
+// scoreTemplate scores a template based on how well it matches the commit message context
+func (t *Templater) scoreTemplate(template string, msg *analyzer.CommitMessage) float64 {
+	score := 0.0
+
+	// Base score
+	score += 1.0
+
+	// Bonus for templates that match detected patterns
+	for _, pattern := range msg.ChangePatterns {
+		if strings.Contains(template, pattern) ||
+			(pattern == "error-handling" && strings.Contains(template, "fix")) ||
+			(pattern == "test-addition" && strings.Contains(template, "test")) ||
+			(pattern == "documentation" && strings.Contains(template, "docs")) ||
+			(pattern == "api-changes" && strings.Contains(template, "api")) ||
+			(pattern == "database" && strings.Contains(template, "db")) ||
+			(pattern == "security" && strings.Contains(template, "security")) ||
+			(pattern == "performance" && strings.Contains(template, "perf")) {
+			score += 2.0
+		}
+	}
+
+	// Bonus for templates that use detected structures
+	if len(msg.DetectedFunctions) > 0 && strings.Contains(template, "{item}") {
+		score += 1.5
+	}
+	if len(msg.DetectedStructs) > 0 && strings.Contains(template, "{item}") {
+		score += 1.5
+	}
+
+	// Bonus for templates with purpose placeholder when we have a good purpose
+	if msg.Purpose != "general update" && strings.Contains(template, "{purpose}") {
+		score += 1.0
+	}
+
+	// Bonus for templates that match file type context
+	for _, ext := range msg.FileExtensions {
+		if ext == "go" && strings.Contains(template, "func") {
+			score += 0.5
+		}
+		if (ext == "json" || ext == "yaml" || ext == "yml") &&
+			(strings.Contains(template, "config") || strings.Contains(template, "settings")) {
+			score += 1.0
+		}
+		if ext == "md" && strings.Contains(template, "docs") {
+			score += 1.5
+		}
+	}
+
+	// Penalty for generic templates when we have specific information
+	if strings.Contains(template, "general") && len(msg.ChangePatterns) > 0 {
+		score -= 0.5
+	}
+
+	// Bonus for templates matching major changes
+	if msg.IsMajor && (strings.Contains(template, "restructure") ||
+		strings.Contains(template, "refactor") || strings.Contains(template, "major")) {
+		score += 1.0
+	}
+
+	return score
+}
+>>>>>>> 1028df8 (fix(config): updated imports)
