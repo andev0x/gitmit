@@ -197,20 +197,26 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s\n\n", finalMessage)
 
 		if !autoFlag && !dryRunFlag {
-			for {
-				color.Blue("What would you like to do?")
-				fmt.Println("y - Accept and commit")
-				fmt.Println("n - Reject and exit")
-				fmt.Println("e - Edit message")
-				fmt.Println("c - Create new message")
-				fmt.Printf("\nChoice [y/n/e/c]: ")
+			// Track used suggestions to avoid repetition with 'r' option
+			usedSuggestions := map[string]bool{finalMessage: true}
+			regenerationCount := 0
+			const maxRegenerations = 10
 
-				var choice string
-				fmt.Scanln(&choice)
+			for {
+				color.Blue("Actions:")
+				fmt.Println("  y - Accept and commit")
+				fmt.Println("  n - Reject and exit")
+				fmt.Println("  e - Edit message manually")
+				fmt.Println("  r - Regenerate different suggestion")
+				fmt.Printf("\nChoice [y/n/e/r]: ")
+
+				reader := bufio.NewReader(os.Stdin)
+				choice, _ := reader.ReadString('\n')
+				choice = strings.TrimSpace(strings.ToLower(choice))
 				fmt.Println()
 
-				switch strings.ToLower(choice) {
-				case "y":
+				switch choice {
+				case "y", "":
 					// Commit the message
 					commitCmd := exec.Command("git", "commit", "-m", finalMessage)
 					commitCmd.Stdout = os.Stdout
@@ -231,39 +237,48 @@ func runPropose(cmd *cobra.Command, args []string) error {
 					return nil
 
 				case "e":
-					color.Blue("📝 Edit the commit message (press Enter when done):")
-					fmt.Printf("%s", finalMessage)
+					color.Blue("📝 Edit the commit message:")
+					fmt.Printf("Current: %s\n", finalMessage)
+					fmt.Print("New message: ")
 
-					var editedMessage string
-					scanner := bufio.NewScanner(os.Stdin)
-					if scanner.Scan() {
-						editedMessage = scanner.Text()
-					}
+					editedMessage, _ := reader.ReadString('\n')
+					editedMessage = strings.TrimSpace(editedMessage)
 
 					if editedMessage != "" {
 						finalMessage = editedMessage
+						usedSuggestions[finalMessage] = true
 						// Show the edited message and prompt again
-						color.Green("\nUpdated commit message:")
+						color.Green("\n✓ Updated commit message:")
 						fmt.Printf("%s\n\n", finalMessage)
+						continue
+					} else {
+						color.Yellow("⚠ No changes made. Keeping current message.\n\n")
 						continue
 					}
 
-				case "c":
-					color.Blue("📝 Enter your commit message:")
-					scanner := bufio.NewScanner(os.Stdin)
-					if scanner.Scan() {
-						finalMessage = scanner.Text()
-					}
-
-					if finalMessage != "" {
-						// Show the new message and prompt again
-						color.Green("\nNew commit message:")
-						fmt.Printf("%s\n\n", finalMessage)
+				case "r":
+					if regenerationCount >= maxRegenerations {
+						color.Yellow("⚠ Maximum regeneration attempts reached.\n\n")
 						continue
 					}
+
+					// Generate a new alternative suggestion
+					newSuggestion, err := templater.GetAlternativeSuggestion(commitMessage, usedSuggestions)
+					if err != nil || newSuggestion == "" {
+						color.Yellow("⚠ Could not generate alternative suggestion. Try editing instead.\n\n")
+						continue
+					}
+
+					regenerationCount++
+					finalMessage = formatter.FormatMessage(newSuggestion, commitMessage.IsMajor)
+					usedSuggestions[finalMessage] = true
+
+					color.Green("\n💡 Alternative suggestion #%d:", regenerationCount)
+					fmt.Printf("%s\n\n", finalMessage)
+					continue
 
 				default:
-					color.Yellow("Invalid choice. Please try again.")
+					color.Yellow("⚠ Invalid choice. Please select y, n, e, or r.\n\n")
 					continue
 				}
 			}

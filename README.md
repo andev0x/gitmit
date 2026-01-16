@@ -12,16 +12,16 @@ A lightweight CLI tool that analyzes your staged changes and generates professio
 
 ## Features
 
-- **Intelligent Analysis** - Analyzes git status and diff to understand your changes
+- **Intelligent Analysis** - Analyzes git status and diff to understand your changes using advanced pattern detection
 - **Conventional Commits** - Follows the Conventional Commits specification for standardized messages
-- **Multiple Commit Types** - Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, config, deploy, revert, and wip
-- **Interactive Mode** - Customize commit messages with interactive prompts
-- **Quick Commits** - Fast commits without interaction
-- **Smart Analysis** - Advanced commit history analysis and insights
-- **Amend Support** - Easily amend previous commits with smart suggestions
-- **Custom Messages** - Use custom messages with scope and breaking change support
+- **Interactive Mode** - Enhanced interactive prompts with y/n/e/r options (yes/no/edit/regenerate)
+- **Smart Regeneration** - Generate alternative commit messages with diverse suggestions
+- **Context-Aware Scoring** - Weighted algorithm for intelligent template selection
+- **Pattern Detection** - Detects error handling, tests, API changes, database operations, and more
+- **Multiple Commit Types** - Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, and more
 - **Zero Configuration** - Works out of the box with sensible defaults
-- **Offline First** - Complete offline operation, no external dependencies
+- **Offline First** - Complete offline operation, no AI or external dependencies required
+- **History Tracking** - Learns from your commit history to avoid repetitive suggestions
 
 
 ## Installation
@@ -84,71 +84,98 @@ Gitmit will analyze your changes and suggest a professional commit message follo
 
 ## Usage
 
+### Interactive Mode (Default)
+
+When you run `gitmit`, it will analyze your changes and present you with an interactive prompt:
+
+```bash
+git add .
+gitmit
+
+💡 Suggested commit message:
+feat(api): implement user authentication strategy
+
+Actions:
+  y - Accept and commit
+  n - Reject and exit
+  e - Edit message manually
+  r - Regenerate different suggestion
+
+Choice [y/n/e/r]:
+```
+
+**Interactive Options:**
+- **`y`** (or press Enter) - Accept the suggestion and commit
+- **`n`** - Reject and exit without committing
+- **`e`** - Edit the message manually with your own text
+- **`r`** - Regenerate a completely different suggestion using intelligent variation algorithms
+
 ### Command-Line Options
 
 ```bash
 # Show suggested message without committing
 gitmit --dry-run
 
-# Display detailed analysis of changes
-gitmit --verbose
+# Get multiple ranked suggestions
+gitmit --suggestions
 
-# Commit immediately without interactive prompts
-gitmit --quick
+# Show analysis context (what was detected)
+gitmit --context
 
-# Use OpenAI for enhanced message generation
-gitmit --openai
+# Auto-commit with best suggestion (skip interactive)
+gitmit --auto
 
-# Amend the previous commit
-gitmit --amend
-
-# Force interactive mode
-gitmit --interactive
-
-# Use a custom commit message
-gitmit --message "your message"
-
-# Specify a commit scope
-gitmit --scope "api"
-
-# Mark as breaking change
-gitmit --breaking
+# Enable debug mode
+gitmit --debug
 ```
 
 ### Subcommands
 
-#### Analyze Commit History
+#### Propose (Default Command)
 
 ```bash
-gitmit analyze
+gitmit propose           # Analyze and suggest commit message
+gitmit propose -i        # Interactive mode with multiple suggestions
+gitmit propose -s        # Show multiple ranked suggestions
+gitmit propose --context # Show what was analyzed
+gitmit propose --auto    # Auto-commit with best suggestion
 ```
 
-Provides insights on:
-- Commit patterns and trends
-- Most active files and directories
-- Commit type distribution
-- Development velocity
+If no subcommand is provided, `gitmit` defaults to `propose`.
 
-#### Smart Suggestions
+## How It Works
 
-```bash
-gitmit smart
-```
+Gitmit uses intelligent offline algorithms to analyze your changes:
 
-Offers:
-- Multiple commit suggestions with confidence levels
-- Context-aware reasoning
-- File operation analysis
-- Scope detection
-- Breaking change identification
+1. **Pattern Detection** - Identifies code patterns like:
+   - Error handling improvements
+   - Test additions
+   - API/endpoint changes
+   - Database operations
+   - Security enhancements
+   - Performance optimizations
+   - Configuration updates
+   - And 15+ other patterns
 
-#### Propose from Diff
+2. **Context Analysis** - Examines:
+   - File types and extensions
+   - Directory structure
+   - Function/struct/method changes
+   - Line additions and deletions
+   - Multi-file patterns
 
-```bash
-git diff --cached | gitmit propose
-```
+3. **Weighted Scoring** - Selects templates using:
+   - Placeholder availability (item, purpose, topic)
+   - Pattern matching bonuses
+   - File type context
+   - Special case detection
+   - Diversity algorithms for variations
 
-Generate a commit message from a diff passed via stdin.
+4. **Smart Variation** - When regenerating (pressing 'r'):
+   - Avoids previously shown suggestions
+   - Uses similarity detection to ensure diversity
+   - Maintains context relevance
+   - Applies randomization for variety
 
 ## Commit Types
 
@@ -174,66 +201,103 @@ Gitmit supports the following commit types (automatically detected):
 
 ## Examples
 
-### Feature Addition
+### Basic Interactive Usage
 
 ```bash
-git add new-feature.js
+# Stage your changes
+git add internal/api/handler.go
+
+# Run gitmit
 gitmit
-# Generates: feat: add new-feature.js
+
+# Output:
+💡 Suggested commit message:
+feat(api): implement authentication middleware
+
+Actions:
+  y - Accept and commit
+  n - Reject and exit
+  e - Edit message manually
+  r - Regenerate different suggestion
+
+Choice [y/n/e/r]: r
+
+# After pressing 'r':
+💡 Alternative suggestion #1:
+feat(api): add role-based access control for authentication
+
+Choice [y/n/e/r]: y
+
+✅ Changes committed successfully.
 ```
 
-### Bug Fix
-
-```bash
-git add bug-fix.js
-gitmit
-# Generates: fix: resolve issue in bug-fix.js
-```
-
-### Documentation Update
-
-```bash
-git add README.md
-gitmit
-# Generates: docs: update README
-```
-
-### Quick Commit
+### Multiple Suggestions Mode
 
 ```bash
 git add .
-gitmit --quick
-# Commits immediately without prompts
+gitmit propose -s
+
+# Output:
+💡 Ranked Suggestions:
+1. feat(api): implement user authentication strategy (recommended)
+2. feat(api): add token-based access via middleware
+3. feat(auth): integrate OAuth provider for secure access
+4. feat(api): expose new endpoint for authentication
+5. feat(auth): implement MFA/2FA support for security
 ```
 
-### Custom Message with Scope
+### Context Analysis
 
 ```bash
-git add .
-gitmit --message "improve performance" --scope "api" --breaking
-# Generates: feat(api)!: improve performance
+gitmit propose --context
+
+# Output:
+📊 Analysis Context:
+Action: feat
+Topic:  api
+Item:   handler
+Purpose: authentication
+Scope:  auth
+Files:  +127 -15
+Types:  [go]
+
+💡 Suggested commit message:
+feat(auth): implement handler authentication strategy
 ```
 
-### Amend Previous Commit
+### Edit Mode
 
 ```bash
-git add additional-changes.js
-gitmit --amend
-# Amends the last commit with new changes
+gitmit
+
+# Output:
+💡 Suggested commit message:
+feat(api): add new endpoint
+
+Choice [y/n/e/r]: e
+
+📝 Edit the commit message:
+Current: feat(api): add new endpoint
+New message: feat(api): add user registration endpoint with validation
+
+✓ Updated commit message:
+feat(api): add user registration endpoint with validation
+
+Choice [y/n/e/r]: y
+✅ Changes committed successfully.
 ```
 
 ## Configuration
 
-Gitmit works out of the box without any configuration. No configuration files are required.
+Gitmit works out of the box without any configuration. All intelligence is built-in using:
 
-### Optional: OpenAI Integration
+- **Template-based generation** with 100+ curated commit message templates
+- **Pattern matching algorithms** for context detection
+- **Weighted scoring system** for template selection
+- **Similarity detection** for diverse variations
+- **Commit history tracking** to avoid repetition
 
-To use OpenAI for enhanced commit message generation, set your API key:
-
-```bash
-export OPENAI_API_KEY="your-api-key"
-gitmit --openai
-```
+No AI, APIs, or external services required. Everything runs locally and offline.
 
 ## Contributing
 

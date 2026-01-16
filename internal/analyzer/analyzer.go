@@ -817,5 +817,50 @@ func (a *Analyzer) detectChangePatterns(change *parser.Change) []string {
 		patterns = append(patterns, "security")
 	}
 
+	// Enhanced pattern detection for better context
+
+	// Detect interface implementations
+	if strings.Contains(diff, "+func (") && strings.Contains(diff, "interface") {
+		patterns = append(patterns, "interface-implementation")
+	}
+
+	// Detect validation logic
+	if strings.Contains(diff, "validate") || strings.Contains(diff, "Validate") ||
+		(strings.Contains(diff, "if ") && strings.Contains(diff, "return")) {
+		patterns = append(patterns, "validation")
+	}
+
+	// Detect logging enhancements
+	if strings.Contains(diff, "+") && (strings.Contains(diff, "log.") ||
+		strings.Contains(diff, "logger.") || strings.Contains(diff, "Logger")) {
+		patterns = append(patterns, "logging")
+	}
+
+	// Detect middleware changes
+	if strings.Contains(change.File, "middleware") ||
+		(strings.Contains(diff, "func ") && strings.Contains(diff, "next")) {
+		patterns = append(patterns, "middleware")
+	}
+
+	// Detect dependency injection setup
+	if strings.Contains(diff, "New") && strings.Contains(diff, "return &") {
+		patterns = append(patterns, "dependency-injection")
+	}
+
+	// Detect CLI/command changes
+	if strings.Contains(diff, "cobra.Command") || strings.Contains(diff, "flag.") {
+		patterns = append(patterns, "cli")
+	}
+
+	// Detect type definitions
+	if strings.Contains(diff, "+type ") {
+		patterns = append(patterns, "type-definition")
+	}
+
+	// Detect constant definitions
+	if strings.Contains(diff, "+const ") || strings.Contains(diff, "+var ") {
+		patterns = append(patterns, "constant-definition")
+	}
+
 	return patterns
 }
