@@ -212,44 +212,139 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 	// Scoring-based selection: prefer templates that use available context
 	type scored struct {
 		tmpl  string
-		score int
+		score float64
 	}
 
 	var candidates []scored
 
 	for _, tmpl := range topicTemplates {
-		score := 0
-		// reward templates that include placeholders we can fill
+		score := 0.0
+
+		// Core placeholder rewards
 		if strings.Contains(tmpl, "{item}") && item != "" {
-			score += 3
+			score += 3.0
 		}
 		if strings.Contains(tmpl, "{purpose}") && msg.Purpose != "" && msg.Purpose != "general update" {
-			score += 2
+			score += 2.5
 		}
 		if strings.Contains(tmpl, "{source}") && source != "" {
-			score += 3
+			score += 3.0
 		}
 		if strings.Contains(tmpl, "{target}") && target != "" {
-			score += 3
+			score += 3.0
 		}
 		if strings.Contains(tmpl, "{topic}") && msg.Topic != "" {
-			score += 1
+			score += 1.5
 		}
-		// small randomness to diversify choices
-		score += rand.Intn(2)
+
+		// Context-aware bonuses
+
+		// Pattern matching bonus
+		for _, pattern := range msg.ChangePatterns {
+			patternKeywords := map[string][]string{
+				"error-handling":           {"fix", "error", "handle"},
+				"test-addition":            {"test", "coverage"},
+				"documentation":            {"docs", "document", "comment"},
+				"api-changes":              {"api", "endpoint", "route"},
+				"database":                 {"db", "database", "query", "schema"},
+				"security":                 {"security", "auth", "token"},
+				"performance":              {"perf", "optimize", "speed"},
+				"validation":               {"validat", "check", "verify"},
+				"logging":                  {"log", "trace", "debug"},
+				"middleware":               {"middleware", "chain"},
+				"interface-implementation": {"implement", "interface"},
+				"cli":                      {"command", "flag", "cli"},
+			}
+
+			if keywords, exists := patternKeywords[pattern]; exists {
+				for _, keyword := range keywords {
+					if strings.Contains(strings.ToLower(tmpl), keyword) {
+						score += 2.0
+						break
+					}
+				}
+			}
+		}
+
+		// File type context bonus
+		for _, ext := range msg.FileExtensions {
+			extKeywords := map[string][]string{
+				"go":   {"func", "method", "type"},
+				"json": {"config", "setting", "format"},
+				"yaml": {"config", "setting"},
+				"yml":  {"config", "setting"},
+				"md":   {"docs", "document"},
+				"sql":  {"database", "query"},
+			}
+
+			if keywords, exists := extKeywords[ext]; exists {
+				for _, keyword := range keywords {
+					if strings.Contains(strings.ToLower(tmpl), keyword) {
+						score += 1.0
+						break
+					}
+				}
+			}
+		}
+
+		// Detected structure bonus
+		if len(msg.DetectedFunctions) > 0 && strings.Contains(strings.ToLower(tmpl), "func") {
+			score += 1.5
+		}
+		if len(msg.DetectedStructs) > 0 && strings.Contains(strings.ToLower(tmpl), "type") {
+			score += 1.5
+		}
+		if len(msg.DetectedMethods) > 0 && strings.Contains(strings.ToLower(tmpl), "method") {
+			score += 1.5
+		}
+
+		// Major change bonus
+		if msg.IsMajor && (strings.Contains(strings.ToLower(tmpl), "restructure") ||
+			strings.Contains(strings.ToLower(tmpl), "refactor") ||
+			strings.Contains(strings.ToLower(tmpl), "major")) {
+			score += 2.0
+		}
+
+		// Special case bonuses
+		if msg.IsDocsOnly && strings.Contains(strings.ToLower(tmpl), "doc") {
+			score += 2.5
+		}
+		if msg.IsConfigOnly && strings.Contains(strings.ToLower(tmpl), "config") {
+			score += 2.5
+		}
+		if msg.IsDepsOnly && strings.Contains(strings.ToLower(tmpl), "dep") {
+			score += 2.5
+		}
+
+		// Penalty for generic templates when specific context exists
+		isGeneric := strings.Contains(strings.ToLower(tmpl), "general") ||
+			strings.Contains(strings.ToLower(tmpl), "update")
+		if isGeneric && (len(msg.ChangePatterns) > 0 || msg.Purpose != "general update") {
+			score -= 1.0
+		}
+
+		// Small randomness for variety (0-0.5)
+		score += rand.Float64() * 0.5
 
 		candidates = append(candidates, scored{tmpl: tmpl, score: score})
 	}
 
-	// sort candidates by score (simple selection of best score)
-	bestScore := -1
+	// Sort candidates by score descending
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].score > candidates[j].score
+	})
+
+	// Get best candidates (top scorers)
+	bestScore := -1.0
 	var bestCandidates []string
 	for _, c := range candidates {
-		if c.score > bestScore {
+		if bestScore < 0 {
 			bestScore = c.score
 			bestCandidates = []string{c.tmpl}
-		} else if c.score == bestScore {
+		} else if c.score >= bestScore-0.5 { // Allow slight variance in "best"
 			bestCandidates = append(bestCandidates, c.tmpl)
+		} else {
+			break // Scores are sorted, no need to continue
 		}
 	}
 
@@ -311,7 +406,7 @@ func (t *Templater) GetSuggestions(msg *analyzer.CommitMessage, maxSuggestions i
 	// Score all candidates
 	type scoredTemplate struct {
 		template string
-		score    int
+		score    float64
 	}
 
 	var scored []scoredTemplate
@@ -325,45 +420,30 @@ func (t *Templater) GetSuggestions(msg *analyzer.CommitMessage, maxSuggestions i
 	}
 
 	for _, tmpl := range candidates {
-		score := 0
+		score := 0.0
 
-		// Core context matching
+		// Use the comprehensive scoring function
+		score = t.scoreTemplate(tmpl, msg)
+
+		// Core placeholder rewards (additional specific bonuses)
 		if strings.Contains(tmpl, "{item}") && msg.Item != "" {
-			score += 3
+			score += 1.0
 		}
 		if strings.Contains(tmpl, "{purpose}") && msg.Purpose != "" && msg.Purpose != "general update" {
-			score += 2
+			score += 1.0
 		}
 		if strings.Contains(tmpl, "{source}") && source != "" {
-			score += 3
+			score += 1.5
 		}
 		if strings.Contains(tmpl, "{target}") && target != "" {
-			score += 3
+			score += 1.5
 		}
 		if strings.Contains(tmpl, "{topic}") && msg.Topic != "" {
-			score += 1
+			score += 0.5
 		}
 
-		// Additional heuristics
-		if msg.IsDocsOnly && strings.Contains(strings.ToLower(tmpl), "doc") {
-			score += 2
-		}
-		if msg.IsConfigOnly && strings.Contains(strings.ToLower(tmpl), "config") {
-			score += 2
-		}
-		if msg.IsDepsOnly && strings.Contains(strings.ToLower(tmpl), "dep") {
-			score += 2
-		}
-
-		// File type bonus
-		for _, ext := range msg.FileExtensions {
-			if strings.Contains(strings.ToLower(tmpl), ext) {
-				score++
-			}
-		}
-
-		// Small randomness for variety
-		score += rand.Intn(2)
+		// Small randomness for variety (0-1)
+		score += rand.Float64()
 
 		scored = append(scored, scoredTemplate{tmpl, score})
 	}
@@ -562,4 +642,177 @@ func (t *Templater) scoreTemplate(template string, msg *analyzer.CommitMessage) 
 	}
 
 	return score
+}
+
+// GetAlternativeSuggestion generates a new commit message avoiding already used suggestions
+// It uses intelligent variation algorithms including:
+// - Context-aware scoring for relevance
+// - Similarity detection to ensure diversity
+// - History tracking to avoid repetition
+// - Weighted randomization for variety
+func (t *Templater) GetAlternativeSuggestion(msg *analyzer.CommitMessage, usedSuggestions map[string]bool) (string, error) {
+	// Get all candidate templates using the same logic as GetSuggestions
+	actionKey, candidates := t.DebugInfo(msg)
+	if candidates == nil || len(candidates) == 0 {
+		return "", fmt.Errorf("no templates found for action: %s", actionKey)
+	}
+
+	// Prepare placeholder values
+	source := ""
+	target := ""
+	if len(msg.RenamedFiles) > 0 {
+		source = msg.RenamedFiles[0].Source
+		target = msg.RenamedFiles[0].Target
+	}
+
+	// Enhanced item selection based on detected structures
+	item := msg.Item
+	if len(msg.DetectedFunctions) > 0 {
+		item = msg.DetectedFunctions[0]
+	} else if len(msg.DetectedStructs) > 0 {
+		item = msg.DetectedStructs[0]
+	} else if len(msg.DetectedMethods) > 0 {
+		item = msg.DetectedMethods[0]
+	}
+
+	replacer := strings.NewReplacer(
+		"{topic}", msg.Topic,
+		"{item}", item,
+		"{purpose}", msg.Purpose,
+		"{source}", source,
+		"{target}", target,
+	)
+
+	// Score all candidates and sort by relevance with diversity bonus
+	type scoredTemplate struct {
+		template string
+		message  string
+		score    float64
+	}
+
+	var scored []scoredTemplate
+
+	for _, tmpl := range candidates {
+		message := replacer.Replace(tmpl)
+
+		// Skip if already used
+		if usedSuggestions[message] {
+			continue
+		}
+
+		// Calculate base score using context matching
+		score := t.scoreTemplate(tmpl, msg)
+
+		// Add diversity bonus - prefer templates with different structure/wording
+		diversityBonus := 0.0
+		for usedMsg := range usedSuggestions {
+			// Calculate simple similarity (Levenshtein-like heuristic)
+			similarity := calculateSimilarity(message, usedMsg)
+			if similarity < 0.5 {
+				diversityBonus += 1.0
+			} else if similarity < 0.7 {
+				diversityBonus += 0.5
+			}
+		}
+		score += diversityBonus
+
+		// Small random factor for variety (0-1)
+		score += rand.Float64()
+
+		scored = append(scored, scoredTemplate{tmpl, message, score})
+	}
+
+	if len(scored) == 0 {
+		// If all have been used, reset and try again with lower standards
+		for _, tmpl := range candidates {
+			message := replacer.Replace(tmpl)
+			score := t.scoreTemplate(tmpl, msg) + rand.Float64()
+			scored = append(scored, scoredTemplate{tmpl, message, score})
+		}
+	}
+
+	if len(scored) == 0 {
+		return "", fmt.Errorf("no alternative suggestions available")
+	}
+
+	// Sort by score descending and return the top one
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+
+	return scored[0].message, nil
+}
+
+// calculateSimilarity returns a similarity score between 0.0 (completely different) and 1.0 (identical)
+// Uses a hybrid approach combining:
+// - Word-level Jaccard similarity (60% weight) - measures semantic overlap
+// - Character-level position matching (40% weight) - measures structural similarity
+// This ensures both content and structure are considered when determining diversity
+func calculateSimilarity(s1, s2 string) float64 {
+	if s1 == s2 {
+		return 1.0
+	}
+
+	// Normalize strings
+	s1 = strings.ToLower(strings.TrimSpace(s1))
+	s2 = strings.ToLower(strings.TrimSpace(s2))
+
+	// Word-level comparison
+	words1 := strings.Fields(s1)
+	words2 := strings.Fields(s2)
+
+	// Count common words
+	wordSet1 := make(map[string]bool)
+	for _, w := range words1 {
+		wordSet1[w] = true
+	}
+
+	commonWords := 0
+	for _, w := range words2 {
+		if wordSet1[w] {
+			commonWords++
+		}
+	}
+
+	// Calculate Jaccard similarity
+	totalUniqueWords := len(wordSet1)
+	for _, w := range words2 {
+		if !wordSet1[w] {
+			totalUniqueWords++
+		}
+	}
+
+	if totalUniqueWords == 0 {
+		return 0.0
+	}
+
+	wordSimilarity := float64(commonWords) / float64(totalUniqueWords)
+
+	// Character-level comparison (Levenshtein distance approximation)
+	maxLen := len(s1)
+	if len(s2) > maxLen {
+		maxLen = len(s2)
+	}
+
+	if maxLen == 0 {
+		return 1.0
+	}
+
+	// Simple character overlap
+	charMatches := 0
+	minLen := len(s1)
+	if len(s2) < minLen {
+		minLen = len(s2)
+	}
+
+	for i := 0; i < minLen; i++ {
+		if s1[i] == s2[i] {
+			charMatches++
+		}
+	}
+
+	charSimilarity := float64(charMatches) / float64(maxLen)
+
+	// Weighted combination (60% word-based, 40% character-based)
+	return 0.6*wordSimilarity + 0.4*charSimilarity
 }
