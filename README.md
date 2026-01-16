@@ -1,40 +1,38 @@
 <div align="center">
   <img src="assets/p1.png" alt="Gitmit" width="600"/>
 
-
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/andev0x/gitmit)](https://goreportcard.com/report/github.com/andev0x/gitmit)
-
+  [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Go Report Card](https://goreportcard.com/badge/github.com/andev0x/gitmit)](https://goreportcard.com/report/github.com/andev0x/gitmit)
 </div>
 
-# Gitmit - Smart Git Commit Message Generator
+# Gitmit
 
-🧠 A lightweight CLI tool that analyzes your staged changes and suggests professional commit messages following Conventional Commits format.
+A lightweight CLI tool that analyzes your staged changes and generates professional git commit messages following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
 ## Features
 
-- **Intelligent Analysis**: Analyzes git status and diff to understand your changes
-- **Conventional Commits**: Follows the [Conventional Commits](https://www.conventionalcommits.org/) specification
-- **Multiple Commit Types**: Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, config, deploy, revert, and wip
-- **Interactive Mode**: Customize commit messages with an interactive prompt
-- **Quick Commits**: Fast commits without interaction
-- **Smart Analysis**: Advanced commit history analysis and insights
-- **Amend Support**: Easily amend previous commits with smart suggestions
-- **Custom Messages**: Use custom messages with scope and breaking change support
-- **Zero Configuration**: Works out of the box
-- **Lightning Fast**: Complete offline operation
+- **Intelligent Analysis** - Analyzes git status and diff to understand your changes
+- **Conventional Commits** - Follows the Conventional Commits specification for standardized messages
+- **Multiple Commit Types** - Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, config, deploy, revert, and wip
+- **Interactive Mode** - Customize commit messages with interactive prompts
+- **Quick Commits** - Fast commits without interaction
+- **Smart Analysis** - Advanced commit history analysis and insights
+- **Amend Support** - Easily amend previous commits with smart suggestions
+- **Custom Messages** - Use custom messages with scope and breaking change support
+- **Zero Configuration** - Works out of the box with sensible defaults
+- **Offline First** - Complete offline operation, no external dependencies
 
 
 ## Installation
-
-Gitmit is designed to run everywhere.
 
 ### From Releases
 
 Download the latest release for your platform from the [releases page](https://github.com/andev0x/gitmit/releases).
 
-### From Source
+### Build from Source
+
+Clone the repository and build:
 
 ```bash
 git clone https://github.com/andev0x/gitmit.git
@@ -42,11 +40,15 @@ cd gitmit
 go build -o gitmit
 ```
 
-After building, you can install `gitmit` to your system's PATH.
+Or with build confirmation:
 
-#### Linux (Arch Linux Example)
+```bash
+go build -o bin/gitmit 2>&1 && echo "✓ Build successful" && ./bin/gitmit --version
+```
 
-To install `gitmit` to `/usr/local/bin`:
+### Installation to PATH
+
+#### Linux
 
 ```bash
 sudo mv gitmit /usr/local/bin
@@ -54,142 +56,69 @@ sudo mv gitmit /usr/local/bin
 
 #### macOS
 
-To determine where `go` binaries are typically installed on your system, use `which go`. This will help you decide where to move the `gitmit` executable. For example, if `which go` returns `/usr/local/bin/go`, you might move `gitmit` there:
+First, determine your Go binary directory:
 
 ```bash
-sudo mv gitmit /Users/username/go/bin
+which go
 ```
 
-Alternatively, you can add the directory containing the `gitmit` executable to your shell's PATH environment variable.
-
-
-## Usage
-
-### Basic Usage
+Then move the executable to your Go bin directory:
 
 ```bash
-# Stage your changes
-git add .
+sudo mv bin/gitmit $(go env GOPATH)/bin/gitmit
+```
 
-# Generate and commit with smart message
+Alternatively, add the directory containing `gitmit` to your shell's `PATH` environment variable.
+
+
+## Quick Start
+
+Stage your changes and generate a commit message:
+
+```bash
+git add .
 gitmit
 ```
 
-### Command Options
+Gitmit will analyze your changes and suggest a professional commit message following Conventional Commits format.
+
+## Usage
+
+### Command-Line Options
 
 ```bash
 # Show suggested message without committing
 gitmit --dry-run
 
-# Show detailed analysis
+# Display detailed analysis of changes
 gitmit --verbose
 
-# Quick commit without interaction
+# Commit immediately without interactive prompts
 gitmit --quick
 
 # Use OpenAI for enhanced message generation
 gitmit --openai
 
-# Amend the last commit
+# Amend the previous commit
 gitmit --amend
 
 # Force interactive mode
 gitmit --interactive
 
-# Custom commit message
-gitmit --message "your custom message"
+# Use a custom commit message
+gitmit --message "your message"
 
-# Specify commit scope
+# Specify a commit scope
 gitmit --scope "api"
 
 # Mark as breaking change
 gitmit --breaking
 ```
 
-### Smart Analysis
+### Subcommands
 
-```bash
-# Analyze commit history and get insights
-gitmit analyze
+#### Analyze Commit History
 
-# Get smart commit suggestions
-gitmit smart
-```
-
-### Propose Mode
-
-```bash
-# Propose commit message from diff
-git diff --cached | gitmit propose
-```
-
-## Commit Types
-
-Gitmit automatically detects and suggests appropriate commit types:
-
-- **feat**: New features
-- **fix**: Bug fixes
-- **refactor**: Code refactoring
-- **chore**: Maintenance tasks
-- **test**: Adding or updating tests
-- **docs**: Documentation changes
-- **style**: Code style changes (formatting, etc.)
-- **perf**: Performance improvements
-- **ci**: CI/CD changes
-- **build**: Build system changes
-- **security**: Security improvements
-- **config**: Configuration changes
-- **deploy**: Deployment changes
-- **revert**: Reverting previous commits
-- **wip**: Work in progress
-
-## Examples
-
-### Feature Addition
-```bash
-git add new-feature.js
-gitmit
-# Suggests: feat: add new-feature.js
-```
-
-### Bug Fix
-```bash
-git add bug-fix.js
-gitmit
-# Suggests: fix: resolve issue in bug-fix.js
-```
-
-### Documentation Update
-```bash
-git add README.md
-gitmit
-# Suggests: docs: update README
-```
-
-### Quick Commit
-```bash
-git add .
-gitmit --quick
-# Commits immediately with auto-generated message
-```
-
-### Custom Message with Scope
-```bash
-git add .
-gitmit --message "improve performance" --scope "api" --breaking
-# Creates: feat(api)!: improve performance
-```
-
-### Amend Previous Commit
-```bash
-git add additional-changes.js
-gitmit --amend
-# Amends the last commit with new changes
-```
-
-## Smart Analysis Features
-
-### Commit History Analysis
 ```bash
 gitmit analyze
 ```
@@ -199,9 +128,9 @@ Provides insights on:
 - Most active files and directories
 - Commit type distribution
 - Development velocity
-- Potential improvements
 
-### Smart Suggestions
+#### Smart Suggestions
+
 ```bash
 gitmit smart
 ```
@@ -213,12 +142,94 @@ Offers:
 - Scope detection
 - Breaking change identification
 
+#### Propose from Diff
+
+```bash
+git diff --cached | gitmit propose
+```
+
+Generate a commit message from a diff passed via stdin.
+
+## Commit Types
+
+Gitmit supports the following commit types (automatically detected):
+
+| Type | Description |
+|------|-------------|
+| **feat** | New features |
+| **fix** | Bug fixes |
+| **refactor** | Code refactoring |
+| **chore** | Maintenance tasks |
+| **test** | Adding or updating tests |
+| **docs** | Documentation changes |
+| **style** | Code style changes (formatting, whitespace) |
+| **perf** | Performance improvements |
+| **ci** | CI/CD configuration changes |
+| **build** | Build system changes |
+| **security** | Security improvements |
+| **config** | Configuration changes |
+| **deploy** | Deployment changes |
+| **revert** | Reverting previous commits |
+| **wip** | Work in progress |
+
+## Examples
+
+### Feature Addition
+
+```bash
+git add new-feature.js
+gitmit
+# Generates: feat: add new-feature.js
+```
+
+### Bug Fix
+
+```bash
+git add bug-fix.js
+gitmit
+# Generates: fix: resolve issue in bug-fix.js
+```
+
+### Documentation Update
+
+```bash
+git add README.md
+gitmit
+# Generates: docs: update README
+```
+
+### Quick Commit
+
+```bash
+git add .
+gitmit --quick
+# Commits immediately without prompts
+```
+
+### Custom Message with Scope
+
+```bash
+git add .
+gitmit --message "improve performance" --scope "api" --breaking
+# Generates: feat(api)!: improve performance
+```
+
+### Amend Previous Commit
+
+```bash
+git add additional-changes.js
+gitmit --amend
+# Amends the last commit with new changes
+```
+
 ## Configuration
 
-Gitmit works out of the box with zero configuration. However, you can enhance it with:
+Gitmit works out of the box without any configuration. No configuration files are required.
 
-### OpenAI Integration (pending)
-Set your OpenAI API key for enhanced commit message generation:
+### Optional: OpenAI Integration
+
+To use OpenAI for enhanced commit message generation, set your API key:
+
 ```bash
 export OPENAI_API_KEY="your-api-key"
 gitmit --openai
@@ -226,7 +237,7 @@ gitmit --openai
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
 
 ## License
 
