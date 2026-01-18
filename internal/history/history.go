@@ -1,10 +1,13 @@
 package history
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"os/exec"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -25,7 +28,7 @@ type CommitHistory struct {
 
 // LoadHistory loads the commit history from .commit_suggest_history.json
 func LoadHistory() (*CommitHistory, error) {
-	data, err := ioutil.ReadFile(historyFileName)
+	data, err := os.ReadFile(historyFileName)
 	if os.IsNotExist(err) {
 		return &CommitHistory{Entries: []HistoryEntry{}}, nil // Return empty history if file doesn't exist
 	}
@@ -49,7 +52,7 @@ func (h *CommitHistory) SaveHistory() error {
 		return fmt.Errorf("error marshaling commit history: %w", err)
 	}
 
-	err = ioutil.WriteFile(historyFileName, data, 0644)
+	err = os.WriteFile(historyFileName, data, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing commit history file %s: %w", historyFileName, err)
 	}
@@ -81,4 +84,63 @@ func (h *CommitHistory) Contains(message string) bool {
 		}
 	}
 	return false
+}
+
+// GetRecentCommitContext retrieves the most recent commit message from git history
+// This helps maintain consistency by suggesting similar topics/scopes
+func GetRecentCommitContext() (string, string, error) {
+	// Get the last commit message on the current branch
+	cmd := exec.Command("git", "log", "-1", "--pretty=%B")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", "", fmt.Errorf("error getting recent commit: %w", err)
+	}
+
+	commitMsg := strings.TrimSpace(out.String())
+	if commitMsg == "" {
+		return "", "", nil
+	}
+
+	// Extract topic/scope from conventional commit format: type(scope): message
+	// Pattern: type(scope): message
+	re := regexp.MustCompile(`^[a-z]+\(([^)]+)\):`)
+	matches := re.FindStringSubmatch(commitMsg)
+	if len(matches) > 1 {
+		scope := matches[1]
+		return commitMsg, scope, nil
+	}
+
+	return commitMsg, "", nil
+}
+
+// GetRecentCommits retrieves the last N commit messages from git history
+func GetRecentCommits(count int) ([]string, error) {
+	cmd := exec.Command("git", "log", fmt.Sprintf("-%d", count), "--pretty=%B")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("error getting recent commits: %w", err)
+	}
+
+	commits := []string{}
+	lines := strings.Split(out.String(), "\n")
+	currentCommit := ""
+	for _, line := range lines {
+		if line == "" {
+			if currentCommit != "" {
+				commits = append(commits, strings.TrimSpace(currentCommit))
+				currentCommit = ""
+			}
+		} else {
+			currentCommit += line + " "
+		}
+	}
+	if currentCommit != "" {
+		commits = append(commits, strings.TrimSpace(currentCommit))
+	}
+
+	return commits, nil
 }

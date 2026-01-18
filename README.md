@@ -14,6 +14,13 @@ A lightweight CLI tool that analyzes your staged changes and generates professio
 
 - **Intelligent Analysis** - Analyzes git status and diff to understand your changes using advanced pattern detection
 - **Conventional Commits** - Follows the Conventional Commits specification for standardized messages
+- **Configuration Hierarchy** - Local (`.gitmit.json`) → Global (`~/.gitmit.json`) → Default (Embedded) config support
+- **Automatic Project Profiling** - Detects project type (Go, Node.js, Python, Java, etc.) from characteristic files
+- **Keyword Scoring Algorithm** - Analyzes git diff content and scores keywords to determine the best commit type
+- **Symbol Extraction** - Uses language-aware regex to extract function, class, and variable names
+- **Git Porcelain Status** - Leverages `git status --porcelain` for accurate file state detection
+- **Diff Stat Analysis** - Infers intent based on added vs deleted lines ratio
+- **Commit History Context** - Maintains consistency by learning from recent commit messages
 - **Interactive Mode** - Enhanced interactive prompts with y/n/e/r options (yes/no/edit/regenerate)
 - **Smart Regeneration** - Generate alternative commit messages with diverse suggestions
 - **Context-Aware Scoring** - Weighted algorithm for intelligent template selection
@@ -131,6 +138,24 @@ gitmit --debug
 
 ### Subcommands
 
+#### Initialize Configuration
+
+```bash
+# Create local .gitmit.json in current directory
+gitmit init
+
+# Create global ~/.gitmit.json in home directory
+gitmit init --global
+```
+
+The `init` command automatically detects your project type and generates a configuration file with:
+- Language-specific keyword mappings
+- Project-appropriate topic mappings
+- Customizable keyword scoring weights
+- Diff stat analysis thresholds
+
+See [CONFIGURATION.md](CONFIGURATION.md) for detailed configuration options.
+
 #### Propose (Default Command)
 
 ```bash
@@ -147,7 +172,46 @@ If no subcommand is provided, `gitmit` defaults to `propose`.
 
 Gitmit uses intelligent offline algorithms to analyze your changes:
 
-1. **Pattern Detection** - Identifies code patterns like:
+1. **Automatic Project Profiling** - Detects project type by checking for:
+   - `go.mod` (Go)
+   - `package.json` (Node.js)
+   - `requirements.txt` (Python)
+   - And more (Java, Ruby, Rust, PHP)
+
+2. **Git Porcelain Status** - Uses `git status --porcelain` to read file states:
+   - A (Added) → prioritizes `feat` templates
+   - M (Modified) → analyzes for `fix`, `refactor`, or `feat`
+   - D (Deleted) → suggests `chore` or `refactor`
+   - R (Renamed) → suggests `refactor`
+
+3. **Keyword Scoring Algorithm** - Analyzes `git diff --cached` content:
+   - Counts keyword occurrences
+   - Multiplies by configured weights
+   - Selects action with highest score
+   - Example: `+ func` (weight: 3) + `+ class` (weight: 2) = 5 points for `feat`
+
+4. **Symbol Extraction via Regex** - Language-aware pattern matching:
+   - Go: Functions (`func Name(`), structs (`type Name struct`)
+   - JavaScript: Functions, arrow functions, classes
+   - Python: Functions (`def name(`), classes (`class Name`)
+   - Fills `{item}` placeholder automatically
+
+5. **Path-based Topic Detection** - Uses `filepath.Dir` logic:
+   - Custom topic mappings from config
+   - Prioritizes `internal/` or `pkg/` subdirectories
+   - Falls back to most specific directory name
+
+6. **Diff Stat Analysis** - Analyzes line change ratios:
+   - Deleted lines > 70% → suggests `refactor` (cleanup)
+   - Added lines > 70% with 50+ lines → suggests `feat` (new feature)
+   - Balanced changes → suggests `refactor` (modification)
+
+7. **Commit History Context** - Maintains consistency:
+   - Retrieves most recent commit message
+   - Extracts scope from `type(scope): message` format
+   - Prioritizes same scope for next commit
+
+8. **Pattern Detection** - Identifies code patterns like:
    - Error handling improvements
    - Test additions
    - API/endpoint changes
@@ -157,25 +221,19 @@ Gitmit uses intelligent offline algorithms to analyze your changes:
    - Configuration updates
    - And 15+ other patterns
 
-2. **Context Analysis** - Examines:
+9. **Context Analysis** - Examines:
    - File types and extensions
    - Directory structure
    - Function/struct/method changes
    - Line additions and deletions
    - Multi-file patterns
 
-3. **Weighted Scoring** - Selects templates using:
-   - Placeholder availability (item, purpose, topic)
-   - Pattern matching bonuses
-   - File type context
-   - Special case detection
-   - Diversity algorithms for variations
-
-4. **Smart Variation** - When regenerating (pressing 'r'):
-   - Avoids previously shown suggestions
-   - Uses similarity detection to ensure diversity
-   - Maintains context relevance
-   - Applies randomization for variety
+10. **Weighted Scoring** - Selects templates using:
+    - Placeholder availability (item, purpose, topic)
+    - Pattern matching bonuses
+    - File type context
+    - Special case detection
+    - Diversity algorithms for variations
 
 ## Commit Types
 
@@ -289,13 +347,77 @@ Choice [y/n/e/r]: y
 
 ## Configuration
 
-Gitmit works out of the box without any configuration. All intelligence is built-in using:
+Gitmit works out of the box without any configuration, but you can customize its behavior using a configuration file.
+
+### Configuration Hierarchy
+
+1. **Local** (`.gitmit.json`) - Project-specific settings in current directory
+2. **Global** (`~/.gitmit.json`) - User-wide settings in home directory
+3. **Default** (Embedded) - Built-in defaults
+
+Settings from higher priority configs override lower priority ones.
+
+### Quick Start
+
+```bash
+# Create local config with auto-detected project type
+gitmit init
+
+# Create global config
+gitmit init --global
+```
+
+The `init` command automatically:
+- Detects your project type (Go, Node.js, Python, etc.)
+- Generates language-specific keyword mappings
+- Creates customizable topic mappings
+- Sets up keyword scoring weights
+
+### Configuration Options
+
+**Core Features:**
+- **Project Type Detection** - Automatically identifies language/framework
+- **Keyword Scoring** - Define action-specific keywords and weights
+- **Topic Mappings** - Map file paths to commit scopes
+- **Diff Stat Threshold** - Control added/deleted line ratio analysis
+- **Custom Templates** - Define your own commit message patterns (coming soon)
+
+**Example `.gitmit.json`:**
+```json
+{
+  "projectType": "go",
+  "diffStatThreshold": 0.5,
+  "topicMappings": {
+    "internal/api": "api",
+    "internal/database": "db"
+  },
+  "keywords": {
+    "feat": {
+      "func": 3,
+      "class": 2
+    },
+    "fix": {
+      "bug": 3,
+      "error": 2
+    }
+  }
+}
+```
+
+For detailed configuration documentation, see [CONFIGURATION.md](CONFIGURATION.md).
+
+### Intelligence Built-In
+
+All intelligence is built-in using:
 
 - **Template-based generation** with 100+ curated commit message templates
 - **Pattern matching algorithms** for context detection
 - **Weighted scoring system** for template selection
 - **Similarity detection** for diverse variations
 - **Commit history tracking** to avoid repetition
+- **Language-aware symbol extraction** via regex
+- **Keyword scoring** based on git diff analysis
+- **Diff stat analysis** for intent inference
 
 No AI, APIs, or external services required. Everything runs locally and offline.
 
