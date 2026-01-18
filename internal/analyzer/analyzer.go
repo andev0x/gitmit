@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gitmit/internal/config"
+	"gitmit/internal/history"
 	"gitmit/internal/parser"
 )
 
@@ -111,7 +112,23 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int) *CommitMessage {
 
 	// Default analysis based on the first change if no specific fallback applies
 	firstChange := a.changes[0]
-	commitMessage.Action = a.determineAction(firstChange)
+
+	// Apply diff stat analysis to infer intent based on added vs deleted lines
+	action := a.analyzeDiffStat(totalAdded, totalRemoved)
+	if action != "" {
+		commitMessage.Action = action
+	} else {
+		// Use keyword scoring algorithm to determine the best action
+		action = a.determineActionByKeywordScoring()
+		if action != "" {
+			commitMessage.Action = action
+		} else {
+			// Fallback to default action determination
+			commitMessage.Action = a.determineAction(firstChange)
+		}
+	}
+
+	// Determine other components
 	commitMessage.Topic = a.determineTopic(firstChange.File)
 	commitMessage.Item = a.determineItem(firstChange.File)
 	commitMessage.Purpose = a.determinePurpose(firstChange.Diff)
@@ -121,6 +138,14 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int) *CommitMessage {
 		scope := a.detectIntelligentScope()
 		if scope != "" {
 			commitMessage.Scope = scope
+		}
+	}
+
+	// Use commit history context to suggest consistent topics
+	if commitMessage.Topic == "" || commitMessage.Topic == "core" {
+		// Try to get topic from recent commit history
+		if recentTopic := a.getRecentCommitTopic(); recentTopic != "" {
+			commitMessage.Topic = recentTopic
 		}
 	}
 
@@ -144,6 +169,53 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int) *CommitMessage {
 	}
 
 	return commitMessage
+}
+
+// determineActionByKeywordScoring analyzes git diff content and scores keywords to determine the best action
+// This implements the keyword scoring algorithm requirement
+func (a *Analyzer) determineActionByKeywordScoring() string {
+	if len(a.config.Keywords) == 0 {
+		return "" // No keywords configured, fall back to default logic
+	}
+
+	// Concatenate all diffs
+	var allDiffs strings.Builder
+	for _, change := range a.changes {
+		allDiffs.WriteString(change.Diff)
+		allDiffs.WriteString("\n")
+	}
+	diffContent := strings.ToLower(allDiffs.String())
+
+	// Score each action based on keyword matches
+	actionScores := make(map[string]int)
+
+	for action, keywords := range a.config.Keywords {
+		score := 0
+		for keyword, weight := range keywords {
+			keywordLower := strings.ToLower(keyword)
+			// Count occurrences and multiply by weight
+			occurrences := strings.Count(diffContent, keywordLower)
+			score += occurrences * weight
+		}
+		actionScores[action] = score
+	}
+
+	// Find the action with the highest score
+	maxScore := 0
+	bestAction := ""
+	for action, score := range actionScores {
+		if score > maxScore {
+			maxScore = score
+			bestAction = action
+		}
+	}
+
+	// Only return the action if the score is significant (> 0)
+	if maxScore > 0 {
+		return bestAction
+	}
+
+	return ""
 }
 
 // detectIntelligentScope determines the best scope based on file paths and patterns
@@ -665,53 +737,215 @@ func uniqueStrings(s []string) []string {
 	return result
 }
 
-// detectFunctions extracts function names from diff
+// detectFunctions extracts function names from diff using language-aware regex
 func (a *Analyzer) detectFunctions(diff string) []string {
 	var functions []string
 	scanner := bufio.NewScanner(strings.NewReader(diff))
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		// Look for Go function declarations
-		if strings.Contains(line, "func ") {
-			// Extract function name
-			if strings.HasPrefix(line, "+") || strings.HasPrefix(line, "-") {
-				funcLine := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(line, "+"), "-"))
-				if strings.HasPrefix(funcLine, "func ") {
-					parts := strings.Fields(funcLine)
+
+		// Only look at added lines
+		if !strings.HasPrefix(line, "+") {
+			continue
+		}
+
+		cleanLine := strings.TrimSpace(strings.TrimPrefix(line, "+"))
+
+		// Go functions
+		if strings.HasPrefix(cleanLine, "func ") {
+			// Extract function name: func FunctionName( or func (receiver) MethodName(
+			if strings.Contains(cleanLine, "(") {
+				// Check for method receiver
+				if cleanLine[5] == '(' {
+					// Method: func (r Receiver) MethodName
+					parts := strings.SplitN(cleanLine[5:], ")", 2)
+					if len(parts) == 2 {
+						methodPart := strings.TrimSpace(parts[1])
+						if idx := strings.Index(methodPart, "("); idx > 0 {
+							methodName := strings.TrimSpace(methodPart[:idx])
+							if methodName != "" {
+								functions = append(functions, methodName)
+							}
+						}
+					}
+				} else {
+					// Regular function: func FunctionName(
+					parts := strings.Fields(cleanLine)
 					if len(parts) >= 2 {
 						funcName := strings.Split(parts[1], "(")[0]
+						if funcName != "" {
+							functions = append(functions, funcName)
+						}
+					}
+				}
+			}
+		}
+
+		// JavaScript/TypeScript functions
+		if strings.Contains(cleanLine, "function ") {
+			// function functionName( or function(
+			idx := strings.Index(cleanLine, "function ")
+			if idx >= 0 {
+				remaining := cleanLine[idx+9:]
+				if parenIdx := strings.Index(remaining, "("); parenIdx > 0 {
+					funcName := strings.TrimSpace(remaining[:parenIdx])
+					if funcName != "" && funcName != "function" {
 						functions = append(functions, funcName)
 					}
 				}
 			}
 		}
+
+		// Arrow functions: const funcName = () =>
+		if strings.Contains(cleanLine, "=>") && (strings.Contains(cleanLine, "const ") || strings.Contains(cleanLine, "let ") || strings.Contains(cleanLine, "var ")) {
+			// Extract: const funcName = ...
+			for _, prefix := range []string{"const ", "let ", "var "} {
+				if strings.Contains(cleanLine, prefix) {
+					idx := strings.Index(cleanLine, prefix)
+					remaining := cleanLine[idx+len(prefix):]
+					if eqIdx := strings.Index(remaining, "="); eqIdx > 0 {
+						funcName := strings.TrimSpace(remaining[:eqIdx])
+						if funcName != "" {
+							functions = append(functions, funcName)
+						}
+					}
+					break
+				}
+			}
+		}
+
+		// Python functions
+		if strings.HasPrefix(cleanLine, "def ") || strings.HasPrefix(cleanLine, "async def ") {
+			// Extract: def function_name( or async def function_name(
+			var remaining string
+			if strings.HasPrefix(cleanLine, "async def ") {
+				remaining = cleanLine[10:]
+			} else {
+				remaining = cleanLine[4:]
+			}
+			if parenIdx := strings.Index(remaining, "("); parenIdx > 0 {
+				funcName := strings.TrimSpace(remaining[:parenIdx])
+				if funcName != "" {
+					functions = append(functions, funcName)
+				}
+			}
+		}
+
+		// Java/C/C++ methods
+		// Pattern: public/private/protected Type methodName(
+		if strings.Contains(cleanLine, "(") {
+			for _, modifier := range []string{"public ", "private ", "protected ", "static "} {
+				if strings.Contains(cleanLine, modifier) {
+					parts := strings.Fields(cleanLine)
+					// Find the part before (
+					for _, part := range parts {
+						if strings.Contains(part, "(") {
+							funcName := strings.Split(part, "(")[0]
+							if funcName != "" && funcName != "if" && funcName != "for" && funcName != "while" && funcName != "switch" {
+								functions = append(functions, funcName)
+								break
+							}
+						}
+					}
+					break
+				}
+			}
+		}
 	}
-	return functions
+	return uniqueStrings(functions)
 }
 
-// detectStructs extracts struct names from diff
+// detectStructs extracts struct/class names from diff using language-aware regex
 func (a *Analyzer) detectStructs(diff string) []string {
 	var structs []string
 	scanner := bufio.NewScanner(strings.NewReader(diff))
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		// Look for Go struct declarations
-		if strings.Contains(line, "type ") && strings.Contains(line, "struct") {
-			if strings.HasPrefix(line, "+") || strings.HasPrefix(line, "-") {
-				structLine := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(line, "+"), "-"))
-				if strings.HasPrefix(structLine, "type ") {
-					parts := strings.Fields(structLine)
-					if len(parts) >= 2 {
-						structName := parts[1]
-						structs = append(structs, structName)
+
+		// Only look at added lines
+		if !strings.HasPrefix(line, "+") {
+			continue
+		}
+
+		cleanLine := strings.TrimSpace(strings.TrimPrefix(line, "+"))
+
+		// Go structs and interfaces
+		if strings.HasPrefix(cleanLine, "type ") && (strings.Contains(cleanLine, "struct") || strings.Contains(cleanLine, "interface")) {
+			parts := strings.Fields(cleanLine)
+			if len(parts) >= 2 {
+				structName := parts[1]
+				if structName != "" {
+					structs = append(structs, structName)
+				}
+			}
+		}
+
+		// JavaScript/TypeScript classes
+		if strings.HasPrefix(cleanLine, "class ") || strings.HasPrefix(cleanLine, "export class ") {
+			var remaining string
+			if strings.HasPrefix(cleanLine, "export class ") {
+				remaining = cleanLine[13:]
+			} else {
+				remaining = cleanLine[6:]
+			}
+
+			// Extract class name (before space, { or extends)
+			className := remaining
+			for _, delimiter := range []string{" ", "{", "extends"} {
+				if idx := strings.Index(className, delimiter); idx > 0 {
+					className = className[:idx]
+					break
+				}
+			}
+			className = strings.TrimSpace(className)
+			if className != "" {
+				structs = append(structs, className)
+			}
+		}
+
+		// Python classes
+		if strings.HasPrefix(cleanLine, "class ") {
+			remaining := cleanLine[6:]
+			// Extract class name (before ( or :)
+			className := remaining
+			for _, delimiter := range []string{"(", ":"} {
+				if idx := strings.Index(className, delimiter); idx > 0 {
+					className = className[:idx]
+					break
+				}
+			}
+			className = strings.TrimSpace(className)
+			if className != "" {
+				structs = append(structs, className)
+			}
+		}
+
+		// Java classes
+		if strings.Contains(cleanLine, "class ") {
+			for _, modifier := range []string{"public class ", "private class ", "protected class ", "abstract class "} {
+				if strings.Contains(cleanLine, modifier) {
+					idx := strings.Index(cleanLine, modifier)
+					remaining := cleanLine[idx+len(modifier):]
+					// Extract class name (before space, { or extends/implements)
+					className := remaining
+					for _, delimiter := range []string{" ", "{", "extends", "implements"} {
+						if idx := strings.Index(className, delimiter); idx > 0 {
+							className = className[:idx]
+							break
+						}
 					}
+					className = strings.TrimSpace(className)
+					if className != "" {
+						structs = append(structs, className)
+					}
+					break
 				}
 			}
 		}
 	}
-	return structs
+	return uniqueStrings(structs)
 }
 
 // detectMethods extracts method names from diff
@@ -863,4 +1097,57 @@ func (a *Analyzer) detectChangePatterns(change *parser.Change) []string {
 	}
 
 	return patterns
+}
+
+// getRecentCommitTopic retrieves the topic/scope from the most recent commit
+// This helps maintain consistency in commit history
+func (a *Analyzer) getRecentCommitTopic() string {
+	_, scope, err := history.GetRecentCommitContext()
+	if err != nil || scope == "" {
+		return ""
+	}
+	return scope
+}
+
+// analyzeDiffStat analyzes the ratio of added vs deleted lines to infer intent
+// This implements the Diff Stat Analysis requirement
+func (a *Analyzer) analyzeDiffStat(totalAdded, totalRemoved int) string {
+	if totalAdded == 0 && totalRemoved == 0 {
+		return ""
+	}
+
+	total := totalAdded + totalRemoved
+	if total == 0 {
+		return ""
+	}
+
+	deletedRatio := float64(totalRemoved) / float64(total)
+	addedRatio := float64(totalAdded) / float64(total)
+
+	threshold := a.config.DiffStatThreshold
+	if threshold == 0 {
+		threshold = 0.5
+	}
+
+	// If deleted lines dominate, suggest cleanup or refactor
+	if deletedRatio > threshold+0.2 { // More than 70% deletions
+		return "refactor"
+	}
+
+	// If a large number of lines are added with minimal deletions, suggest feat
+	if addedRatio > threshold+0.2 && totalAdded > 50 {
+		// Check if it's a new file addition
+		for _, change := range a.changes {
+			if change.Action == "A" && change.Added > 30 {
+				return "feat"
+			}
+		}
+	}
+
+	// Balanced changes often indicate modifications or fixes
+	if deletedRatio > 0.3 && addedRatio > 0.3 {
+		return "refactor"
+	}
+
+	return ""
 }

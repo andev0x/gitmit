@@ -1,257 +1,199 @@
 {
   "A": {
     "auth": [
-      "feat(auth): implement {item} authentication strategy",
-      "feat(auth): integrate {item} provider for secure access",
-      "feat(auth): add role-based access control for {purpose}",
-      "feat(auth): implement token-based access via {item}",
-      "feat(auth): add MFA/2FA support for {item}"
+      "feat(auth): implement {item} strategy",
+      "feat(auth): add support for {item} provider",
+      "feat(auth): integrate new authentication flow",
+      "feat(auth): implement role-based access control",
+      "feat(auth): add session management logic"
     ],
     "api": [
       "feat(api): expose new endpoint for {item}",
-      "feat(api): add versioned route to support {purpose}",
-      "feat(api): implement REST/GraphQL handler for {item}",
-      "feat(api): integrate {item} service into API layer",
-      "feat(api): define request/response contract for {item}"
+      "feat(api): implement REST handler for {item}",
+      "feat(api): define request/response schema",
+      "feat(api): integrate {item} service into API",
+      "feat(api): add new route configuration"
     ],
     "db": [
       "feat(db): define schema for {item} entity",
-      "feat(db): create migration to support {item}",
-      "feat(db): add database index to optimize {purpose}",
-      "feat(db): establish relation between {source} and {target}",
-      "feat(db): implement repository logic for {item}"
+      "feat(db): create migration for {item}",
+      "feat(db): implement repository method for {item}",
+      "feat(db): add database index for performance",
+      "feat(db): establish new table relationships"
     ],
-    "user": [
-      "feat(user): add functionality to manage {item}",
-      "feat(user): implement validation for {item} input",
-      "feat(user): add {item} field to user profile",
-      "feat(user): enable {purpose} workflow for accounts"
+    "cmd": [
+      "feat(cmd): implement {item} command",
+      "feat(cmd): add CLI flags for {purpose}",
+      "feat(cmd): scaffold root command structure",
+      "feat(cmd): add support for new arguments"
     ],
     "ui": [
       "feat(ui): create {item} component",
       "feat(ui): implement responsive layout for {purpose}",
-      "feat(ui): add interactive {item} element to enhance UX",
-      "feat(ui): integrate {item} into the design system"
-    ],
-    "test": [
-      "test({topic}): add unit tests for {item}",
-      "test({topic}): implement table-driven tests for {item}",
-      "test({topic}): create integration test suite for {purpose}",
-      "test({topic}): add E2E scenarios for {item} flow"
+      "feat(ui): add interactive elements",
+      "feat(ui): integrate design system tokens"
     ],
     "config": [
       "chore(config): initialize settings for {item}",
-      "chore(config): add environment variables for {purpose}",
-      "chore(config): configure {module} with default values",
-      "build(deps): add new dependency {item}"
-    ],
-    "ci": [
-      "ci: add pipeline step for {item} validation",
-      "ci: configure build stage for {purpose}",
-      "ci: integrate automated {item} check",
-      "ci: implement deployment step for {item}"
-    ],
-    "logging": [
-      "feat(logging): implement structured logging for {item}",
-      "feat(logging): add request/response tracing for {purpose}",
-      "feat(logging): enable audit logs for {item} actions"
-    ],
-    "caching": [
-      "feat(caching): implement caching layer for {item}",
-      "feat(caching): add cache invalidation logic for {purpose}",
-      "feat(caching): integrate Redis/distributed cache for {item}"
-    ],
-    "validation": [
-      "feat(validation): add input schema for {item}",
-      "feat(validation): implement request body validation for {purpose}",
-      "feat(validation): enforce strict validation rules for {item}"
+      "chore(config): add environment variables",
+      "build(deps): add new dependency {item}",
+      "chore(config): setup default configuration"
     ],
     "_default": [
       "feat({topic}): implement {item} functionality",
-      "feat({topic}): introduce {item} to handle {purpose}",
-      "feat({topic}): scaffold module structure for {item}",
-      "feat({topic}): add support for {item} in {purpose}"
+      "feat({topic}): add support for {item}",
+      "feat({topic}): introduce new feature",
+      "feat({topic}): scaffold initial structure"
     ]
   },
   "M": {
     "auth": [
       "fix(auth): patch security vulnerability in {item}",
-      "fix(auth): resolve token expiry handling for {item}",
-      "refactor(auth): simplify authentication flow logic",
-      "perf(auth): optimize token validation performance",
-      "fix(auth): correct {purpose} in auth middleware"
+      "fix(auth): resolve token expiry issue",
+      "refactor(auth): simplify authentication logic",
+      "perf(auth): optimize token validation",
+      "fix(auth): handle edge cases in login flow"
     ],
     "api": [
       "fix(api): resolve bug in {item} endpoint",
-      "fix(api): ensure correct error handling for {purpose}",
-      "refactor(api): restructure {item} route for clarity",
-      "perf(api): reduce latency for {item} endpoint",
-      "fix(api): handle edge case in {item} payload"
+      "fix(api): correct error handling for {purpose}",
+      "refactor(api): restructure handler logic",
+      "perf(api): reduce latency for {item}",
+      "fix(api): validate request payload strictly"
     ],
     "db": [
       "fix(db): correct schema mismatch for {item}",
-      "fix(db): ensure migration idempotency for {purpose}",
-      "refactor(db): optimize query logic in {item} repository",
-      "perf(db): add index to speed up {item} lookup",
-      "fix(db): resolve data integrity issue in {item}"
-    ],
-    "user": [
-      "fix(user): correct state handling in {item}",
-      "fix(user): add missing nil/null checks for {item}",
-      "refactor(user): clean up user module implementation",
-      "feat(user): enhance {item} with additional validation"
+      "fix(db): ensure migration idempotency",
+      "refactor(db): optimize query in {item} repo",
+      "perf(db): add index to speed up lookups",
+      "fix(db): resolve data integrity constraint"
     ],
     "ui": [
       "fix(ui): resolve rendering issue in {item}",
-      "fix(ui): improve accessibility for {item}",
-      "style(ui): adjust {item} styling to match design",
-      "refactor(ui): simplify component structure of {item}",
-      "perf(ui): improve rendering speed for {item}"
+      "style(ui): adjust {item} styling",
+      "refactor(ui): simplify component structure",
+      "perf(ui): improve rendering performance",
+      "fix(ui): improve accessibility attributes"
+    ],
+    "cmd": [
+      "fix(cmd): correct flag parsing logic",
+      "fix(cmd): handle error output for {item}",
+      "refactor(cmd): reorganize command structure",
+      "docs(cmd): update usage help text"
+    ],
+    "logic": [
+      "fix({topic}): resolve logic error in {item}",
+      "refactor({topic}): improve code readability",
+      "perf({topic}): optimize algorithm for {item}",
+      "fix({topic}): handle nil pointer exception",
+      "refactor({topic}): extract reusable function"
     ],
     "test": [
+      "test({topic}): fix flaky tests",
       "test({topic}): update test cases for {item}",
-      "test({topic}): fix flaky tests in {purpose}",
-      "test({topic}): increase coverage for {item} edge cases",
-      "refactor(test): simplify test setup for {item}"
-    ],
-    "config": [
-      "chore(config): update environment settings for {purpose}",
-      "chore(config): centralize config loading for {item}",
-      "fix(config): correct typo or invalid value in {item}",
-      "build(deps): bump {item} version"
-    ],
-    "ci": [
-      "ci: modify build configuration for {purpose}",
-      "ci: update workflow to fix {item} failure",
-      "ci: refine pipeline step for reliability",
-      "ci: optimize cache strategy in CI"
-    ],
-    "handler": [
-      "fix(handler): resolve bug in {item} logic",
-      "refactor(handler): improve error handling in {item}",
-      "perf(handler): optimize request parsing in {item}"
-    ],
-    "middleware": [
-      "fix(middleware): resolve issue in {item} chain",
-      "refactor(middleware): streamline {purpose} implementation",
-      "perf(middleware): reduce overhead in {item}"
-    ],
-    "service": [
-      "fix(service): correct business logic in {item}",
-      "refactor(service): improve DI/composition for {purpose}",
-      "perf(service): optimize algorithm in {item} service"
-    ],
-    "parser": [
-      "fix(parser): resolve parsing issue in {item}",
-      "refactor(parser): modularize {purpose} parsing logic",
-      "perf(parser): speed up parsing for {item}"
-    ],
-    "analyzer": [
-      "fix(analyzer): correct analysis logic in {item}",
-      "refactor(analyzer): enhance {purpose} detection rules",
-      "perf(analyzer): optimize execution speed"
+      "test({topic}): increase coverage for edge cases",
+      "refactor(test): simplify test setup"
     ],
     "_default": [
-      "fix({topic}): resolve bug affecting {item}",
-      "refactor({topic}): improve code structure for {purpose}",
-      "perf({topic}): optimize performance of {item}",
-      "style({topic}): apply consistent formatting in {item}",
-      "refactor({topic}): extract reusable logic from {item}"
+      "fix({topic}): resolve issue in {item}",
+      "refactor({topic}): improve implementation",
+      "perf({topic}): optimize execution",
+      "style({topic}): format code consistency",
+      "fix({topic}): correct behavior"
     ]
   },
   "D": {
-    "auth": [
-      "chore(auth): remove deprecated login method {item}",
-      "refactor(auth): drop legacy token validation"
-    ],
-    "api": [
-      "chore(api): remove obsolete endpoint {item}",
-      "refactor(api): drop legacy parameter parsing for {purpose}"
-    ],
     "db": [
-      "chore(db): drop unused table/column {item}",
-      "refactor(db): remove obsolete relation for {purpose}"
-    ],
-    "user": [
-      "chore(user): remove deprecated function {item}",
-      "refactor(user): remove redundant validation logic"
+      "chore(db): drop unused table {item}",
+      "chore(db): remove obsolete migration",
+      "refactor(db): remove deprecated relation"
     ],
     "ui": [
       "chore(ui): delete legacy component {item}",
-      "style(ui): remove unused styles for {item}"
-    ],
-    "test": [
-      "test({topic}): remove outdated tests for {item}",
-      "cleanup(test): delete redundant test artifacts"
+      "refactor(ui): remove unused CSS classes"
     ],
     "config": [
-      "chore(config): remove unused configuration {item}",
-      "cleanup(config): delete obsolete environment variables"
-    ],
-    "ci": [
-      "ci: remove deprecated workflow step {item}",
-      "ci: clean up build configuration"
+      "chore(config): remove unused env variables",
+      "chore(config): delete deprecated config file",
+      "build(deps): remove unused dependency {item}"
     ],
     "_default": [
-      "chore({topic}): remove deprecated code in {item}",
-      "cleanup({topic}): delete legacy logic for {purpose}",
-      "refactor({topic}): drop obsolete file or function"
+      "chore({topic}): remove deprecated {item}",
+      "chore({topic}): delete unused code",
+      "refactor({topic}): remove dead code",
+      "chore({topic}): clean up legacy files"
     ]
   },
   "R": {
     "_default": [
       "refactor({topic}): rename {source} to {target}",
-      "refactor({topic}): move {item} to {target} for better organization",
-      "refactor({topic}): restructure project modules",
-      "refactor({topic}): relocate {item} to core"
+      "refactor({topic}): move {item} to {target}",
+      "refactor({topic}): restructure package layout",
+      "refactor({topic}): relocate files for clarity"
     ]
   },
   "DOC": {
     "_default": [
       "docs({topic}): update documentation for {item}",
-      "docs({topic}): document {item} usage and examples",
-      "docs: refine README content for {purpose}",
-      "docs({topic}): fix typo in {item} documentation",
-      "docs({topic}): add JSDoc comments for {item}",
-      "docs: update project documentation",
-      "docs: fix grammatical errors in README"
-    ]
-  },
-  "SECURITY": {
-    "_default": [
-      "security({topic}): fix critical vulnerability in {item}",
-      "security({topic}): enhance security for {purpose}",
-      "security: address CVE in {item}",
-      "security({topic}): patch security flaw in {item}"
-    ]
-  },
-  "PERF": {
-    "_default": [
-      "perf({topic}): optimize {item} execution time",
-      "perf({topic}): reduce memory footprint of {purpose}",
-      "perf: improve overall efficiency of {item}"
-    ]
-  },
-  "STYLE": {
-    "_default": [
-      "style({topic}): format code for consistency",
-      "style({topic}): apply linting fixes to {item}",
-      "style: normalize code styling"
+      "docs({topic}): add usage examples",
+      "docs: update README.md",
+      "docs: fix typo in documentation",
+      "docs({topic}): add comments to exported functions"
     ]
   },
   "TEST": {
     "_default": [
-      "test({topic}): add coverage for {item}",
-      "test({topic}): improve test suite for {purpose}",
-      "test: add missing test cases"
+      "test({topic}): add unit tests for {item}",
+      "test({topic}): implement table-driven tests",
+      "test({topic}): add integration test suite",
+      "test({topic}): cover missing edge cases"
     ]
   },
   "MISC": {
     "_default": [
+      "chore: update project dependencies",
+      "build: update Makefile targets",
+      "ci: update workflow configuration",
       "chore: general maintenance and cleanup",
-      "build: update dependencies and build tools",
-      "chore({topic}): update {item}",
-      "chore: improve {purpose}"
+      "chore: update .gitignore rules",
+      "chore: update license information"
+    ]
+  },
+  "LICENSE": {
+    "_default": [
+      "chore: update LICENSE file",
+      "chore: add {item} license text",
+      "docs: update copyright year in LICENSE"
+    ]
+  },
+  "SECURITY": {
+    "auth": [
+      "fix(security): patch {item} vulnerability in authentication",
+      "fix(security): resolve authorization bypass in {item}",
+      "fix(security): strengthen password validation",
+      "fix(security): implement rate limiting for auth endpoints"
+    ],
+    "api": [
+      "fix(security): sanitize {item} input to prevent injection",
+      "fix(security): add CORS validation for {item}",
+      "fix(security): implement request validation for {item}",
+      "fix(security): fix XSS vulnerability in {item} endpoint"
+    ],
+    "db": [
+      "fix(security): prevent SQL injection in {item} query",
+      "fix(security): encrypt sensitive data in {item}",
+      "fix(security): add access control to {item} operations"
+    ],
+    "deps": [
+      "fix(security): update {item} to patch CVE",
+      "fix(security): upgrade vulnerable dependency {item}",
+      "build(deps): bump {item} for security patch"
+    ],
+    "_default": [
+      "fix(security): patch vulnerability in {item}",
+      "fix(security): address security issue in {topic}",
+      "fix(security): strengthen security controls",
+      "fix(security): resolve {item} security flaw"
     ]
   }
 }

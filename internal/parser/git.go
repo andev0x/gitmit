@@ -35,46 +35,68 @@ func NewGitParser() *GitParser {
 	return &GitParser{}
 }
 
-// ParseStagedChanges parses the staged changes from git
+// ParseStagedChanges parses the staged changes from git using git status --porcelain
 func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
-	// Get the list of staged files and their status
-	cmd := exec.Command("git", "diff", "--cached", "--name-status")
+	// Use git status --porcelain for more accurate file state detection
+	cmd := exec.Command("git", "status", "--porcelain")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("error running git diff --cached --name-status: %w", err)
+		return nil, fmt.Errorf("error running git status --porcelain: %w", err)
 	}
 
 	var changes []*Change
 	scanner := bufio.NewScanner(&out)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.Split(line, "\t")
-		if len(parts) < 2 {
+		if len(line) < 3 {
 			continue
 		}
 
-		action := string(parts[0][0])
-		file := parts[1]
+		// Porcelain format: XY filename
+		// X = staged status, Y = unstaged status
+		stagedStatus := line[0:1]
+		// unstagedStatus := line[1:2]
+		filename := strings.TrimSpace(line[3:])
 
-		change := &Change{
-			File:          file,
-			Action:        action,
-			FileExtension: getFileExtension(file),
+		// Skip if not staged (staged status is space)
+		if stagedStatus == " " || stagedStatus == "?" {
+			continue
 		}
 
-		// Handle renames and copies
+		// Map porcelain status to action
+		action := stagedStatus
+		switch stagedStatus {
+		case "M":
+			action = "M" // Modified
+		case "A":
+			action = "A" // Added
+		case "D":
+			action = "D" // Deleted
+		case "R":
+			action = "R" // Renamed
+		case "C":
+			action = "C" // Copied
+		}
+
+		change := &Change{
+			File:          filename,
+			Action:        action,
+			FileExtension: getFileExtension(filename),
+		}
+
+		// Handle renames and copies (format: "R  oldname -> newname")
 		if action == "R" || action == "C" {
-			if len(parts) < 3 {
-				continue
+			parts := strings.Split(filename, " -> ")
+			if len(parts) == 2 {
+				change.IsRename = action == "R"
+				change.IsCopy = action == "C"
+				change.Source = strings.TrimSpace(parts[0])
+				change.Target = strings.TrimSpace(parts[1])
+				change.File = change.Target // Use the new name as the file
+				change.FileExtension = getFileExtension(change.Target)
 			}
-			change.IsRename = action == "R"
-			change.IsCopy = action == "C"
-			change.Source = parts[1]
-			change.Target = parts[2]
-			change.File = parts[2] // Use the new name as the file
-			change.FileExtension = getFileExtension(parts[2])
 		}
 
 		// Get the diff for the file
@@ -82,7 +104,8 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 		var diffOut bytes.Buffer
 		diffCmd.Stdout = &diffOut
 		err := diffCmd.Run()
-		if err != nil {
+		if err != nil && action != "D" {
+			// For deleted files, diff may fail, which is expected
 			return nil, fmt.Errorf("error running git diff for %s: %w", change.File, err)
 		}
 		change.Diff = diffOut.String()
@@ -109,7 +132,7 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning git diff output: %w", err)
+		return nil, fmt.Errorf("error scanning git status output: %w", err)
 	}
 
 	return changes, nil
