@@ -110,35 +110,43 @@ func NewTemplater(templateFile string, hist *history.CommitHistory) (*Templater,
 
 // GetMessage selects and formats a commit message
 func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
-	// Map analyzer action names (feat, fix, refactor, chore, docs, test, etc.)
-	// to the template groups used in templates.json (A, M, D, R, DOC, MISC)
-	actionMap := map[string]string{
-		"feat":     "A",
-		"add":      "A",
-		"fix":      "M",
-		"bugfix":   "M",
-		"refactor": "R",
-		"chore":    "D",
-		"test":     "M",
-		"docs":     "DOC",
-		"ci":       "M",
-		"perf":     "M",
-		"style":    "MISC",
-		"build":    "MISC",
-		"security": "SECURITY",
-	}
-
-	// Normalize and resolve action group
-	actionLower := strings.ToLower(msg.Action)
+	// Check if this is a special file that needs dedicated handling
+	specialGroup := resolveSpecialFile(msg)
 	var actionKey string
-	if key, ok := actionMap[actionLower]; ok {
-		actionKey = key
-	} else if len(msg.Action) == 1 {
-		// Already a single-letter action like A/M/D/R
-		actionKey = strings.ToUpper(msg.Action)
+
+	if specialGroup != "" {
+		// Force use of special template group
+		actionKey = specialGroup
 	} else {
-		// fallback to MISC
-		actionKey = "MISC"
+		// Map analyzer action names (feat, fix, refactor, chore, docs, test, etc.)
+		// to the template groups used in templates.json (A, M, D, R, DOC, MISC)
+		actionMap := map[string]string{
+			"feat":     "A",
+			"add":      "A",
+			"fix":      "M",
+			"bugfix":   "M",
+			"refactor": "R",
+			"chore":    "D",
+			"test":     "M",
+			"docs":     "DOC",
+			"ci":       "M",
+			"perf":     "M",
+			"style":    "MISC",
+			"build":    "MISC",
+			"security": "SECURITY",
+		}
+
+		// Normalize and resolve action group
+		actionLower := strings.ToLower(msg.Action)
+		if key, ok := actionMap[actionLower]; ok {
+			actionKey = key
+		} else if len(msg.Action) == 1 {
+			// Already a single-letter action like A/M/D/R
+			actionKey = strings.ToUpper(msg.Action)
+		} else {
+			// fallback to MISC
+			actionKey = "MISC"
+		}
 	}
 
 	actionTemplates, ok := t.templates[actionKey]
@@ -323,6 +331,23 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 			score -= 1.0
 		}
 
+		// Bonus for templates that match project scope
+		projectScope := inferProjectScope(msg)
+		if projectScope != "" {
+			templateLower := strings.ToLower(tmpl)
+			scopeLower := strings.ToLower(projectScope)
+
+			// Direct scope mention in template
+			if strings.Contains(templateLower, scopeLower) {
+				score += 1.5
+			}
+
+			// Topic placeholder with meaningful scope
+			if strings.Contains(tmpl, "{topic}") && msg.Topic != "" && msg.Topic != "core" {
+				score += 1.0
+			}
+		}
+
 		// Small randomness for variety (0-0.5)
 		score += rand.Float64() * 0.5
 
@@ -387,11 +412,21 @@ func (t *Templater) GetMessage(msg *analyzer.CommitMessage) (string, error) {
 
 	formattedMsg := replacer.Replace(chosen)
 
-	// If scope exists, prefer replacing the topic scope pattern when present
+	// Infer and apply project scope for better context
+	projectScope := inferProjectScope(msg)
+	if projectScope != "" {
+		// Try common scope patterns
+		formattedMsg = strings.Replace(formattedMsg, "("+msg.Topic+")", "("+projectScope+")", 1)
+	}
+
+	// If scope exists in message, prefer replacing the topic scope pattern when present
 	if msg.Scope != "" {
 		// try common patterns
 		formattedMsg = strings.Replace(formattedMsg, "("+msg.Topic+")", "("+msg.Scope+")", 1)
 	}
+
+	// Clean and normalize the final message
+	formattedMsg = cleanFinalMessage(formattedMsg)
 
 	return formattedMsg, nil
 }
@@ -482,6 +517,7 @@ func (t *Templater) GetSuggestions(msg *analyzer.CommitMessage, maxSuggestions i
 		}
 
 		message := replacer.Replace(s.template)
+		message = cleanFinalMessage(message) // Clean the message
 
 		// Skip if we've seen this exact message or it's in history
 		if usedMessages[message] || t.history.Contains(message) {
@@ -500,6 +536,7 @@ func (t *Templater) GetSuggestions(msg *analyzer.CommitMessage, maxSuggestions i
 			}
 
 			message := replacer.Replace(s.template)
+			message = cleanFinalMessage(message) // Clean the message
 			if !usedMessages[message] {
 				suggestions = append(suggestions, message)
 				usedMessages[message] = true
@@ -589,6 +626,20 @@ func (t *Templater) scoreTemplate(template string, msg *analyzer.CommitMessage) 
 	// Base score
 	score += 1.0
 
+	// PENALTY MECHANISM: Heavy penalty for templates requiring {item} but no data available
+	if strings.Contains(template, "{item}") {
+		// Check if we have any item data
+		hasItem := msg.Item != ""
+		hasDetectedStructures := len(msg.DetectedFunctions) > 0 ||
+			len(msg.DetectedStructs) > 0 ||
+			len(msg.DetectedMethods) > 0
+
+		if !hasItem && !hasDetectedStructures {
+			// Deduct 50 points - this template will never be selected
+			score -= 50.0
+		}
+	}
+
 	// Bonus for templates that match detected patterns
 	for _, pattern := range msg.ChangePatterns {
 		if strings.Contains(template, pattern) ||
@@ -639,6 +690,23 @@ func (t *Templater) scoreTemplate(template string, msg *analyzer.CommitMessage) 
 	if msg.IsMajor && (strings.Contains(template, "restructure") ||
 		strings.Contains(template, "refactor") || strings.Contains(template, "major")) {
 		score += 1.0
+	}
+
+	// Bonus for templates that match the project scope
+	projectScope := inferProjectScope(msg)
+	if projectScope != "" {
+		templateLower := strings.ToLower(template)
+		scopeLower := strings.ToLower(projectScope)
+
+		// Direct scope mention in template
+		if strings.Contains(templateLower, scopeLower) {
+			score += 2.0
+		}
+
+		// Scope matches topic placeholder usage
+		if strings.Contains(template, "{topic}") && msg.Topic != "" {
+			score += 1.0
+		}
 	}
 
 	return score
@@ -694,6 +762,7 @@ func (t *Templater) GetAlternativeSuggestion(msg *analyzer.CommitMessage, usedSu
 
 	for _, tmpl := range candidates {
 		message := replacer.Replace(tmpl)
+		message = cleanFinalMessage(message) // Clean the message
 
 		// Skip if already used
 		if usedSuggestions[message] {
@@ -726,6 +795,7 @@ func (t *Templater) GetAlternativeSuggestion(msg *analyzer.CommitMessage, usedSu
 		// If all have been used, reset and try again with lower standards
 		for _, tmpl := range candidates {
 			message := replacer.Replace(tmpl)
+			message = cleanFinalMessage(message) // Clean the message
 			score := t.scoreTemplate(tmpl, msg) + rand.Float64()
 			scored = append(scored, scoredTemplate{tmpl, message, score})
 		}
@@ -741,6 +811,79 @@ func (t *Templater) GetAlternativeSuggestion(msg *analyzer.CommitMessage, usedSu
 	})
 
 	return scored[0].message, nil
+}
+
+// resolveSpecialFile detects special files like LICENSE, COPYING, .md docs, etc.
+// Returns the special template group to use, or empty string if not a special file
+func resolveSpecialFile(msg *analyzer.CommitMessage) string {
+	// Check if all files are markdown documentation files
+	if msg.IsDocsOnly {
+		return "DOC"
+	}
+
+	// Check for .md file extensions - these are documentation
+	for _, ext := range msg.FileExtensions {
+		if ext == "md" {
+			return "DOC"
+		}
+	}
+
+	// Define special file patterns
+	specialFiles := map[string]string{
+		"license":      "LICENSE",
+		"copying":      "LICENSE",
+		"copyright":    "LICENSE",
+		"readme":       "DOC",
+		"changelog":    "DOC",
+		"authors":      "DOC",
+		"contributors": "DOC",
+	}
+
+	// Check topic and item for special file indicators
+	topicLower := strings.ToLower(msg.Topic)
+	itemLower := strings.ToLower(msg.Item)
+
+	for pattern, group := range specialFiles {
+		if strings.Contains(topicLower, pattern) || strings.Contains(itemLower, pattern) {
+			return group
+		}
+	}
+
+	return ""
+}
+
+// cleanFinalMessage post-processes the commit message to normalize format
+func cleanFinalMessage(message string) string {
+	// Normalize empty parentheses patterns like "feat():" to "feat:"
+	message = strings.ReplaceAll(message, "():", ":")
+	message = strings.ReplaceAll(message, "( ):", ":")
+	message = strings.ReplaceAll(message, "(  ):", ":")
+
+	// Remove excessive whitespace
+	message = strings.TrimSpace(message)
+
+	// Normalize multiple spaces to single space
+	for strings.Contains(message, "  ") {
+		message = strings.ReplaceAll(message, "  ", " ")
+	}
+
+	return message
+}
+
+// inferProjectScope extracts the project scope from file paths
+// This helps match commit messages to the affected module/component
+func inferProjectScope(msg *analyzer.CommitMessage) string {
+	// If the analyzer already detected a scope, use it
+	if msg.Scope != "" {
+		return msg.Scope
+	}
+
+	// Use the topic as the scope if it's meaningful
+	if msg.Topic != "" && msg.Topic != "core" && msg.Topic != "." {
+		return msg.Topic
+	}
+
+	return ""
 }
 
 // calculateSimilarity returns a similarity score between 0.0 (completely different) and 1.0 (identical)
