@@ -138,6 +138,18 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 	return changes, nil
 }
 
+// GetCurrentBranch returns the name of the current git branch
+func (p *GitParser) GetCurrentBranch() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("error getting current branch: %w", err)
+	}
+	return strings.TrimSpace(out.String()), nil
+}
+
 // getFileExtension returns the file extension of a given file path
 func getFileExtension(filename string) string {
 	return strings.TrimPrefix(filepath.Ext(filename), ".")

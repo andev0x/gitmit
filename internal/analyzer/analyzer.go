@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bufio"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gitmit/internal/config"
@@ -44,7 +45,7 @@ func NewAnalyzer(changes []*parser.Change, cfg *config.Config) *Analyzer {
 }
 
 // AnalyzeChanges analyzes the git changes and returns a CommitMessage
-func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int) *CommitMessage {
+func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName string) *CommitMessage {
 	if len(a.changes) == 0 {
 		return nil
 	}
@@ -138,6 +139,25 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int) *CommitMessage {
 		scope := a.detectIntelligentScope()
 		if scope != "" {
 			commitMessage.Scope = scope
+		}
+	}
+
+	// NEW: Extract intent from branch name
+	if branchName != "" {
+		branchAction, branchScope := a.parseBranchName(branchName)
+		if branchAction != "" {
+			commitMessage.Action = branchAction
+		}
+		if branchScope != "" {
+			commitMessage.Scope = branchScope
+		}
+	}
+
+	// NEW: Learning from recent commit history (Commit History Consistency)
+	if historyScope := a.analyzeHistoryScopes(); historyScope != "" {
+		// Only override if scope is empty or "core"
+		if commitMessage.Scope == "" || commitMessage.Scope == "core" {
+			commitMessage.Scope = historyScope
 		}
 	}
 
@@ -1147,6 +1167,94 @@ func (a *Analyzer) analyzeDiffStat(totalAdded, totalRemoved int) string {
 	// Balanced changes often indicate modifications or fixes
 	if deletedRatio > 0.3 && addedRatio > 0.3 {
 		return "refactor"
+	}
+
+	return ""
+}
+
+// parseBranchName extracts type and scope from branch name
+func (a *Analyzer) parseBranchName(branch string) (string, string) {
+	// Patterns like feature/auth-login or bugfix/fix-memleak
+	// Format: <type>/<scope>-<description> or <type>/<description>
+	parts := strings.Split(branch, "/")
+	if len(parts) < 2 {
+		return "", ""
+	}
+
+	branchType := strings.ToLower(parts[0])
+	description := parts[1]
+
+	action := ""
+	switch branchType {
+	case "feature", "feat":
+		action = "feat"
+	case "bugfix", "fix":
+		action = "fix"
+	case "hotfix":
+		action = "fix"
+	case "refactor":
+		action = "refactor"
+	case "chore":
+		action = "chore"
+	case "docs":
+		action = "docs"
+	case "style":
+		action = "style"
+	case "perf":
+		action = "perf"
+	case "test":
+		action = "test"
+	case "ci":
+		action = "ci"
+	case "build":
+		action = "build"
+	}
+
+	scope := ""
+	// Try to extract scope from description: scope-description or scope_description
+	descParts := regexp.MustCompile(`[-_]`).Split(description, 2)
+	if len(descParts) > 1 {
+		scope = descParts[0]
+	} else if len(description) > 0 {
+		// If it's just feature/auth, then auth is the scope
+		scope = description
+	}
+
+	return action, scope
+}
+
+// analyzeHistoryScopes analyzes the last 5 commits for common scopes
+func (a *Analyzer) analyzeHistoryScopes() string {
+	commits, err := history.GetRecentCommits(5)
+	if err != nil || len(commits) == 0 {
+		return ""
+	}
+	return a.calculateHistoryScope(commits)
+}
+
+// calculateHistoryScope calculates the most frequent scope from a list of commit messages
+func (a *Analyzer) calculateHistoryScope(commits []string) string {
+	scopeCounts := make(map[string]int)
+	re := regexp.MustCompile(`^[a-z]+\(([^)]+)\):`)
+
+	for _, msg := range commits {
+		matches := re.FindStringSubmatch(msg)
+		if len(matches) > 1 {
+			scope := matches[1]
+			scopeCounts[scope]++
+		}
+	}
+
+	totalCommits := len(commits)
+	if totalCommits == 0 {
+		return ""
+	}
+
+	for scope, count := range scopeCounts {
+		// If a single scope appears in more than 50% of the commits
+		if float64(count)/float64(totalCommits) > 0.5 {
+			return scope
+		}
 	}
 
 	return ""
