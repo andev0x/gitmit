@@ -2,7 +2,6 @@ package parser
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -39,15 +38,17 @@ func NewGitParser() *GitParser {
 func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 	// Use git status --porcelain for more accurate file state detection
 	cmd := exec.Command("git", "status", "--porcelain")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("error running git status --porcelain: %w", err)
+		return nil, fmt.Errorf("error creating stdout pipe for git status: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("error starting git status: %w", err)
 	}
 
 	var changes []*Change
-	scanner := bufio.NewScanner(&out)
+	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(line) < 3 {
@@ -55,38 +56,22 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 		}
 
 		// Porcelain format: XY filename
-		// X = staged status, Y = unstaged status
 		stagedStatus := line[0:1]
-		// unstagedStatus := line[1:2]
 		filename := strings.TrimSpace(line[3:])
 
-		// Skip if not staged (staged status is space)
+		// Skip if not staged
 		if stagedStatus == " " || stagedStatus == "?" {
 			continue
 		}
 
-		// Map porcelain status to action
 		action := stagedStatus
-		switch stagedStatus {
-		case "M":
-			action = "M" // Modified
-		case "A":
-			action = "A" // Added
-		case "D":
-			action = "D" // Deleted
-		case "R":
-			action = "R" // Renamed
-		case "C":
-			action = "C" // Copied
-		}
-
 		change := &Change{
 			File:          filename,
 			Action:        action,
 			FileExtension: getFileExtension(filename),
 		}
 
-		// Handle renames and copies (format: "R  oldname -> newname")
+		// Handle renames and copies
 		if action == "R" || action == "C" {
 			parts := strings.Split(filename, " -> ")
 			if len(parts) == 2 {
@@ -94,36 +79,36 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 				change.IsCopy = action == "C"
 				change.Source = strings.TrimSpace(parts[0])
 				change.Target = strings.TrimSpace(parts[1])
-				change.File = change.Target // Use the new name as the file
+				change.File = change.Target
 				change.FileExtension = getFileExtension(change.Target)
 			}
 		}
 
-		// Get the diff for the file
+		// Get the diff for the file using streaming
 		diffCmd := exec.Command("git", "diff", "--cached", "-U0", "--", change.File)
-		var diffOut bytes.Buffer
-		diffCmd.Stdout = &diffOut
-		err := diffCmd.Run()
-		if err != nil && action != "D" {
-			// For deleted files, diff may fail, which is expected
-			return nil, fmt.Errorf("error running git diff for %s: %w", change.File, err)
-		}
-		change.Diff = diffOut.String()
-
-		// Count added and removed lines
-		diffScanner := bufio.NewScanner(strings.NewReader(change.Diff))
-		for diffScanner.Scan() {
-			diffLine := diffScanner.Text()
-			if strings.HasPrefix(diffLine, "+") && !strings.HasPrefix(diffLine, "+++") {
-				change.Added++
-			} else if strings.HasPrefix(diffLine, "-") && !strings.HasPrefix(diffLine, "---") {
-				change.Removed++
+		diffStdout, err := diffCmd.StdoutPipe()
+		if err == nil {
+			if err := diffCmd.Start(); err == nil {
+				diffScanner := bufio.NewScanner(diffStdout)
+				var diffBuilder strings.Builder
+				for diffScanner.Scan() {
+					diffLine := diffScanner.Text()
+					if strings.HasPrefix(diffLine, "+") && !strings.HasPrefix(diffLine, "+++") {
+						change.Added++
+					} else if strings.HasPrefix(diffLine, "-") && !strings.HasPrefix(diffLine, "---") {
+						change.Removed++
+					}
+					diffBuilder.WriteString(diffLine)
+					diffBuilder.WriteString("\n")
+				}
+				change.Diff = diffBuilder.String()
+				diffCmd.Wait()
 			}
 		}
+
 		p.TotalAdded += change.Added
 		p.TotalRemoved += change.Removed
 
-		// Detect large changes
 		if (change.Added + change.Removed) >= 500 {
 			change.IsMajor = true
 		}
@@ -131,8 +116,8 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 		changes = append(changes, change)
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning git status output: %w", err)
+	if err := cmd.Wait(); err != nil {
+		return nil, fmt.Errorf("error waiting for git status: %w", err)
 	}
 
 	return changes, nil
@@ -141,13 +126,26 @@ func (p *GitParser) ParseStagedChanges() ([]*Change, error) {
 // GetCurrentBranch returns the name of the current git branch
 func (p *GitParser) GetCurrentBranch() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", fmt.Errorf("error getting current branch: %w", err)
+		return "", fmt.Errorf("error creating stdout pipe for rev-parse: %w", err)
 	}
-	return strings.TrimSpace(out.String()), nil
+
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("error starting rev-parse: %w", err)
+	}
+
+	var branch string
+	scanner := bufio.NewScanner(stdout)
+	if scanner.Scan() {
+		branch = strings.TrimSpace(scanner.Text())
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return "", fmt.Errorf("error waiting for rev-parse: %w", err)
+	}
+
+	return branch, nil
 }
 
 // getFileExtension returns the file extension of a given file path
