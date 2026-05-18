@@ -153,6 +153,16 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		}
 	}
 
+	// NEW: Monitoring Dependency Changes (Dependency Watcher)
+	newDeps := a.detectNewDependencies()
+	if len(newDeps) > 0 {
+		commitMessage.Action = "chore"
+		commitMessage.Scope = "deps"
+		commitMessage.Item = strings.Join(newDeps, ", ")
+		commitMessage.Purpose = "update dependencies"
+		return commitMessage // Priority return for dependency updates
+	}
+
 	// NEW: Learning from recent commit history (Commit History Consistency)
 	if historyScope := a.analyzeHistoryScopes(); historyScope != "" {
 		// Only override if scope is empty or "core"
@@ -762,113 +772,32 @@ func (a *Analyzer) detectFunctions(diff string) []string {
 	var functions []string
 	scanner := bufio.NewScanner(strings.NewReader(diff))
 
+	// Regex registry for functions
+	patterns := map[string]*regexp.Regexp{
+		"go":     regexp.MustCompile(`func\s+(?:\([^)]*\)\s+)?([A-Z][A-Za-z0-9]*)`),
+		"ts":     regexp.MustCompile(`(?:function\s+([a-zA-Z0-9]*)|const\s+([a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9]*)\s*=>)`),
+		"js":     regexp.MustCompile(`(?:function\s+([a-zA-Z0-9]*)|const\s+([a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9]*)\s*=>)`),
+		"python": regexp.MustCompile(`def\s+([a-zA-Z0-9_]+)\s*\(`),
+		"java":   regexp.MustCompile(`(?:public|private|protected|static)\s+(?:[\w<>[\]]+\s+)+([a-zA-Z0-9_]+)\s*\(`),
+	}
+
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		// Only look at added lines
-		if !strings.HasPrefix(line, "+") {
+		if !strings.HasPrefix(line, "+") || strings.HasPrefix(line, "+++") {
 			continue
 		}
 
-		cleanLine := strings.TrimSpace(strings.TrimPrefix(line, "+"))
+		cleanLine := strings.TrimPrefix(line, "+")
 
-		// Go functions
-		if strings.HasPrefix(cleanLine, "func ") {
-			// Extract function name: func FunctionName( or func (receiver) MethodName(
-			if strings.Contains(cleanLine, "(") {
-				// Check for method receiver
-				if cleanLine[5] == '(' {
-					// Method: func (r Receiver) MethodName
-					parts := strings.SplitN(cleanLine[5:], ")", 2)
-					if len(parts) == 2 {
-						methodPart := strings.TrimSpace(parts[1])
-						if idx := strings.Index(methodPart, "("); idx > 0 {
-							methodName := strings.TrimSpace(methodPart[:idx])
-							if methodName != "" {
-								functions = append(functions, methodName)
-							}
-						}
+		for _, re := range patterns {
+			matches := re.FindStringSubmatch(cleanLine)
+			if len(matches) > 0 {
+				// The first captured group (that is not empty) is the function name
+				for i := 1; i < len(matches); i++ {
+					if matches[i] != "" {
+						functions = append(functions, matches[i])
+						break
 					}
-				} else {
-					// Regular function: func FunctionName(
-					parts := strings.Fields(cleanLine)
-					if len(parts) >= 2 {
-						funcName := strings.Split(parts[1], "(")[0]
-						if funcName != "" {
-							functions = append(functions, funcName)
-						}
-					}
-				}
-			}
-		}
-
-		// JavaScript/TypeScript functions
-		if strings.Contains(cleanLine, "function ") {
-			// function functionName( or function(
-			idx := strings.Index(cleanLine, "function ")
-			if idx >= 0 {
-				remaining := cleanLine[idx+9:]
-				if parenIdx := strings.Index(remaining, "("); parenIdx > 0 {
-					funcName := strings.TrimSpace(remaining[:parenIdx])
-					if funcName != "" && funcName != "function" {
-						functions = append(functions, funcName)
-					}
-				}
-			}
-		}
-
-		// Arrow functions: const funcName = () =>
-		if strings.Contains(cleanLine, "=>") && (strings.Contains(cleanLine, "const ") || strings.Contains(cleanLine, "let ") || strings.Contains(cleanLine, "var ")) {
-			// Extract: const funcName = ...
-			for _, prefix := range []string{"const ", "let ", "var "} {
-				if strings.Contains(cleanLine, prefix) {
-					idx := strings.Index(cleanLine, prefix)
-					remaining := cleanLine[idx+len(prefix):]
-					if eqIdx := strings.Index(remaining, "="); eqIdx > 0 {
-						funcName := strings.TrimSpace(remaining[:eqIdx])
-						if funcName != "" {
-							functions = append(functions, funcName)
-						}
-					}
-					break
-				}
-			}
-		}
-
-		// Python functions
-		if strings.HasPrefix(cleanLine, "def ") || strings.HasPrefix(cleanLine, "async def ") {
-			// Extract: def function_name( or async def function_name(
-			var remaining string
-			if strings.HasPrefix(cleanLine, "async def ") {
-				remaining = cleanLine[10:]
-			} else {
-				remaining = cleanLine[4:]
-			}
-			if parenIdx := strings.Index(remaining, "("); parenIdx > 0 {
-				funcName := strings.TrimSpace(remaining[:parenIdx])
-				if funcName != "" {
-					functions = append(functions, funcName)
-				}
-			}
-		}
-
-		// Java/C/C++ methods
-		// Pattern: public/private/protected Type methodName(
-		if strings.Contains(cleanLine, "(") {
-			for _, modifier := range []string{"public ", "private ", "protected ", "static "} {
-				if strings.Contains(cleanLine, modifier) {
-					parts := strings.Fields(cleanLine)
-					// Find the part before (
-					for _, part := range parts {
-						if strings.Contains(part, "(") {
-							funcName := strings.Split(part, "(")[0]
-							if funcName != "" && funcName != "if" && funcName != "for" && funcName != "while" && funcName != "switch" {
-								functions = append(functions, funcName)
-								break
-							}
-						}
-					}
-					break
 				}
 			}
 		}
@@ -881,87 +810,27 @@ func (a *Analyzer) detectStructs(diff string) []string {
 	var structs []string
 	scanner := bufio.NewScanner(strings.NewReader(diff))
 
+	// Regex registry for structs/classes
+	patterns := map[string]*regexp.Regexp{
+		"go":     regexp.MustCompile(`type\s+([A-Z][A-Za-z0-9]*)\s+(?:struct|interface)`),
+		"ts":     regexp.MustCompile(`class\s+([a-zA-Z0-9]*)`),
+		"js":     regexp.MustCompile(`class\s+([a-zA-Z0-9]*)`),
+		"python": regexp.MustCompile(`class\s+([a-zA-Z0-9_]+)\s*(?:\(|:)`),
+		"java":   regexp.MustCompile(`(?:public|private|protected|abstract)?\s*class\s+([a-zA-Z0-9_]+)`),
+	}
+
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		// Only look at added lines
-		if !strings.HasPrefix(line, "+") {
+		if !strings.HasPrefix(line, "+") || strings.HasPrefix(line, "+++") {
 			continue
 		}
 
-		cleanLine := strings.TrimSpace(strings.TrimPrefix(line, "+"))
+		cleanLine := strings.TrimPrefix(line, "+")
 
-		// Go structs and interfaces
-		if strings.HasPrefix(cleanLine, "type ") && (strings.Contains(cleanLine, "struct") || strings.Contains(cleanLine, "interface")) {
-			parts := strings.Fields(cleanLine)
-			if len(parts) >= 2 {
-				structName := parts[1]
-				if structName != "" {
-					structs = append(structs, structName)
-				}
-			}
-		}
-
-		// JavaScript/TypeScript classes
-		if strings.HasPrefix(cleanLine, "class ") || strings.HasPrefix(cleanLine, "export class ") {
-			var remaining string
-			if strings.HasPrefix(cleanLine, "export class ") {
-				remaining = cleanLine[13:]
-			} else {
-				remaining = cleanLine[6:]
-			}
-
-			// Extract class name (before space, { or extends)
-			className := remaining
-			for _, delimiter := range []string{" ", "{", "extends"} {
-				if idx := strings.Index(className, delimiter); idx > 0 {
-					className = className[:idx]
-					break
-				}
-			}
-			className = strings.TrimSpace(className)
-			if className != "" {
-				structs = append(structs, className)
-			}
-		}
-
-		// Python classes
-		if strings.HasPrefix(cleanLine, "class ") {
-			remaining := cleanLine[6:]
-			// Extract class name (before ( or :)
-			className := remaining
-			for _, delimiter := range []string{"(", ":"} {
-				if idx := strings.Index(className, delimiter); idx > 0 {
-					className = className[:idx]
-					break
-				}
-			}
-			className = strings.TrimSpace(className)
-			if className != "" {
-				structs = append(structs, className)
-			}
-		}
-
-		// Java classes
-		if strings.Contains(cleanLine, "class ") {
-			for _, modifier := range []string{"public class ", "private class ", "protected class ", "abstract class "} {
-				if strings.Contains(cleanLine, modifier) {
-					idx := strings.Index(cleanLine, modifier)
-					remaining := cleanLine[idx+len(modifier):]
-					// Extract class name (before space, { or extends/implements)
-					className := remaining
-					for _, delimiter := range []string{" ", "{", "extends", "implements"} {
-						if idx := strings.Index(className, delimiter); idx > 0 {
-							className = className[:idx]
-							break
-						}
-					}
-					className = strings.TrimSpace(className)
-					if className != "" {
-						structs = append(structs, className)
-					}
-					break
-				}
+		for _, re := range patterns {
+			matches := re.FindStringSubmatch(cleanLine)
+			if len(matches) > 1 && matches[1] != "" {
+				structs = append(structs, matches[1])
 			}
 		}
 	}
@@ -1141,35 +1010,61 @@ func (a *Analyzer) analyzeDiffStat(totalAdded, totalRemoved int) string {
 		return ""
 	}
 
-	deletedRatio := float64(totalRemoved) / float64(total)
-	addedRatio := float64(totalAdded) / float64(total)
+	// Structural Ratio Calculation
+	ratio := float64(totalAdded) / float64(total)
 
 	threshold := a.config.DiffStatThreshold
 	if threshold == 0 {
 		threshold = 0.5
 	}
 
-	// If deleted lines dominate, suggest cleanup or refactor
-	if deletedRatio > threshold+0.2 { // More than 70% deletions
+	// If deletions heavily dominate (Ratio < 0.2)
+	if ratio < 0.2 {
 		return "refactor"
 	}
 
-	// If a large number of lines are added with minimal deletions, suggest feat
-	if addedRatio > threshold+0.2 && totalAdded > 50 {
-		// Check if it's a new file addition
-		for _, change := range a.changes {
-			if change.Action == "A" && change.Added > 30 {
-				return "feat"
-			}
+	// If additions heavily dominate (Ratio > 0.8)
+	if ratio > 0.8 {
+		// If many lines added, likely a feature
+		if totalAdded > 30 {
+			return "feat"
 		}
 	}
 
 	// Balanced changes often indicate modifications or fixes
-	if deletedRatio > 0.3 && addedRatio > 0.3 {
+	if ratio >= 0.3 && ratio <= 0.7 {
 		return "refactor"
 	}
 
 	return ""
+}
+
+// detectNewDependencies identifies newly added libraries in package management files
+func (a *Analyzer) detectNewDependencies() []string {
+	var newDeps []string
+	depFiles := map[string]*regexp.Regexp{
+		"go.mod":           regexp.MustCompile(`^\+\s+([^\s]+)\s+v`),
+		"package.json":    regexp.MustCompile(`^\+\s+"([^"]+)":`),
+		"requirements.txt": regexp.MustCompile(`^\+([a-zA-Z0-9\-_]+)==`),
+		"Cargo.toml":      regexp.MustCompile(`^\+([a-zA-Z0-9\-_]+)\s+=`),
+	}
+
+	for _, change := range a.changes {
+		fileName := filepath.Base(change.File)
+		if re, ok := depFiles[fileName]; ok {
+			scanner := bufio.NewScanner(strings.NewReader(change.Diff))
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++") {
+					matches := re.FindStringSubmatch(line)
+					if len(matches) > 1 {
+						newDeps = append(newDeps, matches[1])
+					}
+				}
+			}
+		}
+	}
+	return uniqueStrings(newDeps)
 }
 
 // parseBranchName extracts type and scope from branch name
