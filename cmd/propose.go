@@ -79,7 +79,8 @@ func runPropose(cmd *cobra.Command, args []string) error {
 	}
 
 	analyzer := analyzer.NewAnalyzer(changes, cfg)
-	commitMessage := analyzer.AnalyzeChanges(gitParser.TotalAdded, gitParser.TotalRemoved)
+	branchName, _ := gitParser.GetCurrentBranch()
+	commitMessage := analyzer.AnalyzeChanges(gitParser.TotalAdded, gitParser.TotalRemoved, branchName)
 	if commitMessage == nil {
 		return fmt.Errorf("could not analyze changes")
 	}
