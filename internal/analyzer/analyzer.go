@@ -111,23 +111,66 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		return msg
 	}
 
-	// Default analysis based on the first change if no specific fallback applies
-	firstChange := a.changes[0]
+	// Initialize a score tracker for the action (type)
+	scoreMap := make(map[string]int)
 
-	// Apply diff stat analysis to infer intent based on added vs deleted lines
-	action := a.analyzeDiffStat(totalAdded, totalRemoved)
-	if action != "" {
-		commitMessage.Action = action
-	} else {
-		// Use keyword scoring algorithm to determine the best action
-		action = a.determineActionByKeywordScoring()
-		if action != "" {
-			commitMessage.Action = action
-		} else {
-			// Fallback to default action determination
-			commitMessage.Action = a.determineAction(firstChange)
+	// Step 1: Scan the Branch status
+	if branchName != "" {
+		branchAction, branchScope := a.parseBranchName(branchName)
+		if branchAction != "" {
+			scoreMap[branchAction] += 3
+		}
+		if branchScope != "" {
+			commitMessage.Scope = branchScope
 		}
 	}
+
+	// Step 2: Add weights from diff stat ratio
+	statAction := a.analyzeDiffStat(totalAdded, totalRemoved)
+	if statAction != "" {
+		scoreMap[statAction] += 2
+	}
+
+	// Step 3: Aggregate keyword scores
+	keywordScores := a.calculateKeywordScores()
+	for action, score := range keywordScores {
+		scoreMap[action] += score
+	}
+
+	// Step 4: Add weights from multi-file patterns
+	multiPatterns := a.detectMultiFilePatterns()
+	for _, p := range multiPatterns {
+		switch p {
+		case "feature-addition":
+			scoreMap["feat"] += 4
+		case "bug-fix-cascade":
+			scoreMap["fix"] += 4
+		case "refactor-sweep":
+			scoreMap["refactor"] += 3
+		case "test-suite-update":
+			scoreMap["test"] += 4
+		}
+	}
+
+	// Step 5: Select the recommended type with the highest accumulated score
+	bestAction := ""
+	maxScore := -1
+	for action, score := range scoreMap {
+		if score > maxScore {
+			maxScore = score
+			bestAction = action
+		}
+	}
+
+	if bestAction != "" {
+		commitMessage.Action = bestAction
+	} else {
+		// Fallback to default action determination if no signals
+		commitMessage.Action = a.determineAction(a.changes[0])
+	}
+
+	// Default analysis based on the first change if no specific fallback applies
+	firstChange := a.changes[0]
 
 	// Determine other components
 	commitMessage.Topic = a.determineTopic(firstChange.File)
@@ -139,17 +182,6 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		scope := a.detectIntelligentScope()
 		if scope != "" {
 			commitMessage.Scope = scope
-		}
-	}
-
-	// NEW: Extract intent from branch name
-	if branchName != "" {
-		branchAction, branchScope := a.parseBranchName(branchName)
-		if branchAction != "" {
-			commitMessage.Action = branchAction
-		}
-		if branchScope != "" {
-			commitMessage.Scope = branchScope
 		}
 	}
 
@@ -179,33 +211,14 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		}
 	}
 
-	// Detect multi-file patterns
-	multiPatterns := a.detectMultiFilePatterns()
-	if len(multiPatterns) > 0 {
-		// Adjust action and purpose based on multi-file patterns
-		if contains(multiPatterns, "feature-addition") {
-			commitMessage.Action = "feat"
-			commitMessage.Purpose = "add new feature across multiple modules"
-		} else if contains(multiPatterns, "bug-fix-cascade") {
-			commitMessage.Action = "fix"
-			commitMessage.Purpose = "resolve issue across multiple components"
-		} else if contains(multiPatterns, "refactor-sweep") {
-			commitMessage.Action = "refactor"
-			commitMessage.Purpose = "restructure and improve code organization"
-		} else if contains(multiPatterns, "test-suite-update") {
-			commitMessage.Action = "test"
-			commitMessage.Purpose = "update test suite"
-		}
-	}
-
 	return commitMessage
 }
 
-// determineActionByKeywordScoring analyzes git diff content and scores keywords to determine the best action
-// This implements the keyword scoring algorithm requirement
-func (a *Analyzer) determineActionByKeywordScoring() string {
+// calculateKeywordScores analyzes git diff content and returns a map of scores for each action
+func (a *Analyzer) calculateKeywordScores() map[string]int {
+	actionScores := make(map[string]int)
 	if len(a.config.Keywords) == 0 {
-		return "" // No keywords configured, fall back to default logic
+		return actionScores
 	}
 
 	// Concatenate all diffs
@@ -215,9 +228,6 @@ func (a *Analyzer) determineActionByKeywordScoring() string {
 		allDiffs.WriteString("\n")
 	}
 	diffContent := strings.ToLower(allDiffs.String())
-
-	// Score each action based on keyword matches
-	actionScores := make(map[string]int)
 
 	for action, keywords := range a.config.Keywords {
 		score := 0
@@ -230,22 +240,7 @@ func (a *Analyzer) determineActionByKeywordScoring() string {
 		actionScores[action] = score
 	}
 
-	// Find the action with the highest score
-	maxScore := 0
-	bestAction := ""
-	for action, score := range actionScores {
-		if score > maxScore {
-			maxScore = score
-			bestAction = action
-		}
-	}
-
-	// Only return the action if the score is significant (> 0)
-	if maxScore > 0 {
-		return bestAction
-	}
-
-	return ""
+	return actionScores
 }
 
 // detectIntelligentScope determines the best scope based on file paths and patterns

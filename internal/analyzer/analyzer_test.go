@@ -227,3 +227,43 @@ func TestStructureDetectionRegex(t *testing.T) {
 		}
 	})
 }
+
+func TestCrossScoringMatrix(t *testing.T) {
+	cfg := &config.Config{
+		Keywords: map[string]map[string]int{
+			"fix": {"error": 4},
+		},
+	}
+
+	t.Run("Branch overrides keyword if score is higher", func(t *testing.T) {
+		a := &Analyzer{
+			config: cfg,
+			changes: []*parser.Change{
+				{File: "main.go", Diff: "+ fmt.Println(\"error\")"},
+			},
+		}
+		// branch "feat/new-ui" adds 3 to feat
+		// "error" keyword adds 4 to fix
+		// fix (4) > feat (3) -> fix
+		msg := a.AnalyzeChanges(1, 0, "feat/new-ui")
+		if msg.Action != "fix" {
+			t.Errorf("Expected action fix, got %s", msg.Action)
+		}
+	})
+
+	t.Run("Combined signals", func(t *testing.T) {
+		a := &Analyzer{
+			config: cfg,
+			changes: []*parser.Change{
+				{File: "main.go", Diff: "+ func NewFeature() {", Added: 40, Removed: 0},
+			},
+		}
+		// branch "feature/cool" adds 3 to feat
+		// ratio 1.0 adds 2 to feat (added > 30)
+		// total feat = 5
+		msg := a.AnalyzeChanges(40, 0, "feature/cool")
+		if msg.Action != "feat" {
+			t.Errorf("Expected action feat, got %s", msg.Action)
+		}
+	})
+}
