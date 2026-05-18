@@ -16,11 +16,14 @@ A lightweight CLI tool that analyzes your staged changes and generates professio
 - **Conventional Commits** - Follows the Conventional Commits specification for standardized messages
 - **Configuration Hierarchy** - Local (`.gitmit.json`) → Global (`~/.gitmit.json`) → Default (Embedded) config support
 - **Automatic Project Profiling** - Detects project type (Go, Node.js, Python, Java, etc.) from characteristic files
-- **Keyword Scoring Algorithm** - Analyzes git diff content and scores keywords to determine the best commit type
+- **Cross-Scoring Matrix** - Advanced weighted algorithm that aggregates signals from branch names, keywords, and diff stats
+- **Branch-Aware Intelligence** - Extracts intent and scope automatically from your git branch names
+- **Dependency Watcher** - Monitors `go.mod`, `package.json`, etc., to identify newly added libraries
 - **Symbol Extraction** - Uses language-aware regex to extract function, class, and variable names
 - **Git Porcelain Status** - Leverages `git status --porcelain` for accurate file state detection
-- **Diff Stat Analysis** - Infers intent based on added vs deleted lines ratio
-- **Commit History Context** - Maintains consistency by learning from recent commit messages
+- **Structural Ratio Analysis** - Computes Added/Deleted ratios to precisely distinguish between features and refactors
+- **Memory Optimized** - Streaming diff processing ensures high performance even with large changes
+- **Commit History Context** - Maintains consistency by learning from recent commit messages on your branch
 - **Interactive Mode** - Enhanced interactive prompts with y/n/e/r options (yes/no/edit/regenerate)
 - **Smart Regeneration** - Generate alternative commit messages with diverse suggestions
 - **Context-Aware Scoring** - Weighted algorithm for intelligent template selection
@@ -184,27 +187,26 @@ Gitmit uses intelligent offline algorithms to analyze your changes:
    - D (Deleted) → suggests `chore` or `refactor`
    - R (Renamed) → suggests `refactor`
 
-3. **Keyword Scoring Algorithm** - Analyzes `git diff --cached` content:
-   - Counts keyword occurrences
-   - Multiplies by configured weights
-   - Selects action with highest score
-   - Example: `+ func` (weight: 3) + `+ class` (weight: 2) = 5 points for `feat`
+3. **Cross-Scoring Matrix** - Advanced signal aggregation:
+   - **Branch Intent** (+3 pts): Extracted from patterns like `feature/auth` or `fix/bug-123`
+   - **Keyword Scoring**: Analyzes `git diff` content with weighted keywords
+   - **Diff Stat Ratio** (+2 pts): Analyzes structural ratio of Added/(Added+Deleted)
+   - **Pattern Bonuses**: Extra weight for multi-file patterns (e.g., +4 for feature-addition)
 
 4. **Symbol Extraction via Regex** - Language-aware pattern matching:
    - Go: Functions (`func Name(`), structs (`type Name struct`)
-   - JavaScript: Functions, arrow functions, classes
+   - JavaScript/TypeScript: Functions, arrow functions, classes
    - Python: Functions (`def name(`), classes (`class Name`)
-   - Fills `{item}` placeholder automatically
+   - Java: Classes and methods
 
-5. **Path-based Topic Detection** - Uses `filepath.Dir` logic:
-   - Custom topic mappings from config
-   - Prioritizes `internal/` or `pkg/` subdirectories
-   - Falls back to most specific directory name
+5. **Streaming Diff Processing** - Performance and memory efficiency:
+   - Uses `StdoutPipe` to process git output line-by-line
+   - Minimizes memory footprint for large changesets
+   - Continuous signal processing during parsing
 
-6. **Diff Stat Analysis** - Analyzes line change ratios:
-   - Deleted lines > 70% → suggests `refactor` (cleanup)
-   - Added lines > 70% with 50+ lines → suggests `feat` (new feature)
-   - Balanced changes → suggests `refactor` (modification)
+6. **Dependency Watcher** - Monitors library additions:
+   - Watches `go.mod`, `package.json`, `requirements.txt`, and `Cargo.toml`
+   - Automatically assigns `chore(deps)` when new libraries are detected
 
 7. **Commit History Context** - Maintains consistency:
    - Retrieves most recent commit message
@@ -437,5 +439,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Integration with issue trackers
 - [ ] Multi-language support
 - [ ] Commit message templates
-- [ ] Branch-based suggestions
-- [ ] Commit message history learning
+- [x] Branch-based suggestions
+- [x] Commit message history learning
