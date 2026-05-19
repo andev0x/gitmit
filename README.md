@@ -1,490 +1,150 @@
-<div align="center">
-  <img src="assets/p1.png" alt="Gitmit" width="600"/>
+<h1 align="center">Gitmit</h1>
 
-  [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Go Report Card](https://goreportcard.com/badge/github.com/andev0x/gitmit)](https://goreportcard.com/report/github.com/andev0x/gitmit)
-</div>
+<p align="center">
+  <strong>🧠 Smart, AI-Enhanced Git Commit Message Generator</strong>
+</p>
 
-# Gitmit
+<p align="center">
+  <a href="https://golang.org"><img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go" alt="Go Version"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://goreportcard.com/report/github.com/andev0x/gitmit"><img src="https://goreportcard.com/badge/github.com/andev0x/gitmit" alt="Go Report Card"></a>
+  <a href="https://github.com/andev0x/gitmit/releases"><img src="https://img.shields.io/github/v/release/andev0x/gitmit" alt="Latest Release"></a>
+</p>
 
-A lightweight CLI tool that analyzes your staged changes and generates professional git commit messages following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+---
 
-## Features
+**Gitmit** is a high-performance CLI tool that takes the guesswork out of commit messages. It analyzes your staged changes and generates professional, context-aware messages following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
-- **Hybrid Intelligence** - Merges deterministic heuristic algorithms with deep semantic understanding via Local LLMs
-- **Local AI Integration (Ollama)** - Seamlessly integrates with Ollama to generate context-rich commit messages offline
-- **Intelligent Analysis** - Analyzes git status and diff to understand your changes using advanced pattern detection
-- **Conventional Commits** - Follows the Conventional Commits specification for standardized messages
-- **Configuration Hierarchy** - Local (`.gitmit.json`) → Global (`~/.gitmit.json`) → Default (Embedded) config support
-- **Automatic Project Profiling** - Detects project type (Go, Node.js, Python, Java, etc.) from characteristic files
-- **Cross-Scoring Matrix** - Advanced weighted algorithm that aggregates signals from branch names, keywords, and diff stats
-- **Branch-Aware Intelligence** - Extracts intent and scope automatically from your git branch names
-- **Dependency Watcher** - Monitors `go.mod`, `package.json`, etc., to identify newly added libraries
-- **Symbol Extraction** - Uses language-aware regex to extract function, class, and variable names
-- **Git Porcelain Status** - Leverages `git status --porcelain` for accurate file state detection
-- **Structural Ratio Analysis** - Computes Added/Deleted ratios to precisely distinguish between features and refactors
-- **Memory Optimized** - Streaming diff processing ensures high performance even with large changes
-- **Commit History Context** - Maintains consistency by learning from recent commit messages on your branch
-- **Interactive Mode** - Enhanced interactive prompts with y/n/e/r options (yes/no/edit/regenerate)
-- **Smart Regeneration** - Generate alternative commit messages with diverse suggestions
-- **Context-Aware Scoring** - Weighted algorithm for intelligent template selection
-- **Pattern Detection** - Detects error handling, tests, API changes, database operations, and more
-- **Multiple Commit Types** - Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, and more
-- **Zero Configuration** - Works out of the box with sensible defaults
-- **Hybrid Offline Approach** - Operates completely locally; chooses between heuristic rules or local AI
-- **History Tracking** - Learns from your commit history to avoid repetitive suggestions
+Whether you prefer deterministic heuristic rules or powerful local LLMs, Gitmit provides a seamless, offline-first experience to keep your project history clean and meaningful.
 
+## ✨ Why Gitmit?
 
-## Hybrid Intelligence: Local AI via Ollama
+- **Hybrid Intelligence**: Combines fast, deterministic heuristics with optional Local AI (Ollama) for deep semantic understanding.
+- **Privacy First**: Operates 100% locally. No API keys, no data leaving your machine.
+- **Project Aware**: Automatically detects your project type (Go, Node.js, Python, Rust, etc.) and tailors suggestions accordingly.
+- **Seamless Workflow**: Integrated interactive mode allows you to accept, edit, or regenerate suggestions instantly.
 
-Gitmit evolves from a rule-based utility into a **Hybrid Intelligence** tool by integrating with **Ollama**. This allows you to use powerful local LLMs (like Qwen2.5-Coder) to generate highly descriptive and contextually accurate commit messages without sacrificing privacy or performance.
+## Screenshots
 
-### Prerequisites
+<p align="left">
+  <img src="https://raw.githubusercontent.com/andev0x/description-image-archive/refs/heads/main/gitmit/gitmit.png" width="400" />
+</p>
 
-1.  **Install Ollama**: Download from [ollama.com](https://ollama.com)
-2.  **Pull the Model**:
-    ```bash
-    ollama pull qwen2.5-coder:3b
-    ```
+## 🚀 Quick Start
 
-### Enabling the AI Engine
+### Installation
 
-To switch from the default heuristic engine to the AI engine, update your `.gitmit.json`:
-
-```json
-{
-  "engine": "ollama",
-  "ollama": {
-    "model": "qwen2.5-coder:3b",
-    "url": "http://localhost:11434",
-    "temperature": 0.2
-  }
-}
+#### Using Go:
+```bash
+go install github.com/andev0x/gitmit@latest
 ```
 
-### How the Hybrid Pipeline Works
-
-Gitmit uses a tiered approach to ensure you always get a high-quality suggestion:
-
-1.  **Refined Context Engineering**: Instead of piping raw diffs, Gitmit extracts structured metadata (modified files, symbols, change ratios, project type) and feeds it into a strict system prompt.
-2.  **Local LLM Processing**: Ollama processes the context using your specified model to generate a precise Conventional Commit message.
-3.  **Deterministic Fallback**: If the Ollama daemon is unreachable, the model is missing, or the output is malformatted, Gitmit **instantly falls back** to the Phase 1 Heuristic engine. Your workflow remains uninterrupted.
-
-
-## Installation
-
-### From Releases
-
-Download the latest release for your platform from the [releases page](https://github.com/andev0x/gitmit/releases).
-
-### Build from Source
-
-Clone the repository and build:
-
+#### From Source:
 ```bash
 git clone https://github.com/andev0x/gitmit.git
 cd gitmit
-go build -o gitmit
+make build
+sudo make install
 ```
 
-Or with build confirmation:
+### Basic Usage
+
+1. **Stage your changes:**
+   ```bash
+   git add .
+   ```
+
+2. **Run Gitmit:**
+   ```bash
+   gitmit
+   ```
+
+3. **Profit!** Accept the suggestion or interactively refine it.
+
+## 🛠 Features
+
+### 🔍 Intelligent Analysis
+Uses `git status --porcelain` and `git diff` to understand exactly what changed. It's not just looking at filenames; it understands additions, deletions, and modifications at a structural level.
+
+### 🤖 Hybrid Intelligence (Local AI)
+Optionally use models like `qwen2.5-coder` via [Ollama](https://ollama.com) for human-like commit quality. If the AI is unavailable, Gitmit instantly falls back to its robust heuristic engine.
+
+### 📋 Conventional Commit Standards
+Supports `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `style`, `perf`, `ci`, `build`, `security`, and more, ensuring your team stays aligned with industry standards.
+
+### ⚖️ Weighted Scoring Matrix
+An advanced algorithm that aggregates signals from:
+- **Branch Names**: Extracts intent from `feature/auth` or `fix/bug-123`.
+- **Keywords**: Weighted analysis of code changes.
+- **Diff Stats**: Understands the ratio of added/deleted lines to distinguish between features and refactors.
+
+### 📦 Language & Ecosystem Awareness
+- **Symbol Extraction**: Detects function, class, and variable names in Go, JS/TS, Python, and Java.
+- **Dependency Watcher**: Identifies when you add or update libraries in `go.mod`, `package.json`, `requirements.txt`, etc.
+
+## 🧠 Local AI Setup
+
+To leverage the power of LLMs offline:
+
+1. **Install Ollama** from [ollama.com](https://ollama.com).
+2. **Pull a model**: `ollama pull qwen2.5-coder:3b`
+3. **Initialize Gitmit config**: `gitmit init`
+4. **Enable AI** in `.gitmit.json`:
+   ```json
+   {
+     "engine": "ollama",
+     "ollama": {
+       "model": "qwen2.5-coder:3b"
+     }
+   }
+   ```
+
+## ⌨️ Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `gitmit` | Analyze changes and suggest a message interactively. |
+| `gitmit init` | Create a local `.gitmit.json` configuration. |
+| `gitmit init --global` | Create a global `~/.gitmit.json` configuration. |
+| `gitmit propose --auto` | Automatically commit with the best suggestion. |
+| `gitmit propose -s` | Show multiple ranked suggestions. |
+| `gitmit --version` | Show version information. |
+
+### Interactive Actions:
+- `y`: **Accept** and commit.
+- `n`: **Exit** without committing.
+- `e`: **Edit** the message manually.
+- `r`: **Regenerate** a new suggestion.
+- `a`: **Upgrade** to AI suggestion on-the-fly.
+
+## ⚙️ Configuration
+
+Gitmit works out of the box with zero configuration. For advanced users, it offers deep customization via a tiered config system (Local → Global → Default).
 
 ```bash
-go build -o bin/gitmit 2>&1 && echo "✓ Build successful" && ./bin/gitmit --version
-```
-
-### Installation to PATH
-
-#### Linux
-
-```bash
-sudo mv gitmit /usr/local/bin
-```
-
-#### macOS
-
-First, determine your Go binary directory:
-
-```bash
-which go
-```
-
-Then move the executable to your Go bin directory:
-
-```bash
-sudo mv bin/gitmit $(go env GOPATH)/bin/gitmit
-```
-
-Alternatively, add the directory containing `gitmit` to your shell's `PATH` environment variable.
-
-
-## Quick Start
-
-Stage your changes and generate a commit message:
-
-```bash
-git add .
-gitmit
-```
-
-Gitmit will analyze your changes and suggest a professional commit message following Conventional Commits format.
-
-## Usage
-
-### Interactive Mode (Default)
-
-When you run `gitmit`, it will analyze your changes and present you with an interactive prompt:
-
-```bash
-git add .
-gitmit
-
-💡 Suggested commit message:
-feat(api): implement user authentication strategy
-
-Actions:
-  y - Accept and commit
-  n - Reject and exit
-  e - Edit message manually
-  r - Regenerate different suggestion
-  a - Upgrade suggestion with Local AI (Ollama)
-
-Choice [y/n/e/r/a]:
-```
-
-**Interactive Options:**
-- **`y`** (or press Enter) - Accept the suggestion and commit
-- **`n`** - Reject and exit without committing
-- **`e`** - Edit the message manually with your own text
-- **`r`** - Regenerate a completely different suggestion using intelligent variation algorithms
-- **`a`** - **Upgrade to Local AI**: If you are using the heuristic engine, this attempts to connect to Ollama for a more semantic suggestion
-- **`h`** - **Fallback to Heuristic**: If you are in AI mode, this switches back to the classic rule-based engine
-
-### Command-Line Options
-
-```bash
-# Show suggested message without committing
-gitmit --dry-run
-
-# Get multiple ranked suggestions
-gitmit --suggestions
-
-# Show analysis context (what was detected)
-gitmit --context
-
-# Auto-commit with best suggestion (skip interactive)
-gitmit --auto
-
-# Enable debug mode
-gitmit --debug
-```
-
-### Subcommands
-
-#### Initialize Configuration
-
-```bash
-# Create local .gitmit.json in current directory
-gitmit init
-
-# Create global ~/.gitmit.json in home directory
 gitmit init --global
 ```
 
-The `init` command automatically detects your project type and generates a configuration file with:
-- Language-specific keyword mappings
-- Project-appropriate topic mappings
-- Customizable keyword scoring weights
-- Diff stat analysis thresholds
+Key configuration options include `topicMappings`, `keywordWeights`, and `diffStatThreshold`. For a full deep dive, see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
-See [CONFIGURATION.md](CONFIGURATION.md) for detailed configuration options.
+## 🤝 Contributing
 
-#### Propose (Default Command)
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-```bash
-gitmit propose           # Analyze and suggest commit message
-gitmit propose -i        # Interactive mode with multiple suggestions
-gitmit propose -s        # Show multiple ranked suggestions
-gitmit propose --context # Show what was analyzed
-gitmit propose --auto    # Auto-commit with best suggestion
-```
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`gitmit`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-If no subcommand is provided, `gitmit` defaults to `propose`.
+Check out our [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
-## How It Works
+## ⚖️ License
 
-Gitmit uses intelligent offline algorithms to analyze your changes:
+Distributed under the MIT License. See `LICENSE` for more information.
 
-1. **Automatic Project Profiling** - Detects project type by checking for:
-   - `go.mod` (Go)
-   - `package.json` (Node.js)
-   - `requirements.txt` (Python)
-   - And more (Java, Ruby, Rust, PHP)
+---
 
-2. **Git Porcelain Status** - Uses `git status --porcelain` to read file states:
-   - A (Added) → prioritizes `feat` templates
-   - M (Modified) → analyzes for `fix`, `refactor`, or `feat`
-   - D (Deleted) → suggests `chore` or `refactor`
-   - R (Renamed) → suggests `refactor`
-
-3. **Cross-Scoring Matrix** - Advanced signal aggregation:
-   - **Branch Intent** (+3 pts): Extracted from patterns like `feature/auth` or `fix/bug-123`
-   - **Keyword Scoring**: Analyzes `git diff` content with weighted keywords
-   - **Diff Stat Ratio** (+2 pts): Analyzes structural ratio of Added/(Added+Deleted)
-   - **Pattern Bonuses**: Extra weight for multi-file patterns (e.g., +4 for feature-addition)
-
-4. **Symbol Extraction via Regex** - Language-aware pattern matching:
-   - Go: Functions (`func Name(`), structs (`type Name struct`)
-   - JavaScript/TypeScript: Functions, arrow functions, classes
-   - Python: Functions (`def name(`), classes (`class Name`)
-   - Java: Classes and methods
-
-5. **Streaming Diff Processing** - Performance and memory efficiency:
-   - Uses `StdoutPipe` to process git output line-by-line
-   - Minimizes memory footprint for large changesets
-   - Continuous signal processing during parsing
-
-6. **Dependency Watcher** - Monitors library additions:
-   - Watches `go.mod`, `package.json`, `requirements.txt`, and `Cargo.toml`
-   - Automatically assigns `chore(deps)` when new libraries are detected
-
-7. **Commit History Context** - Maintains consistency:
-   - Retrieves most recent commit message
-   - Extracts scope from `type(scope): message` format
-   - Prioritizes same scope for next commit
-
-8. **Pattern Detection** - Identifies code patterns like:
-   - Error handling improvements
-   - Test additions
-   - API/endpoint changes
-   - Database operations
-   - Security enhancements
-   - Performance optimizations
-   - Configuration updates
-   - And 15+ other patterns
-
-9. **Context Analysis** - Examines:
-   - File types and extensions
-   - Directory structure
-   - Function/struct/method changes
-   - Line additions and deletions
-   - Multi-file patterns
-
-10. **Weighted Scoring** - Selects templates using:
-    - Placeholder availability (item, purpose, topic)
-    - Pattern matching bonuses
-    - File type context
-    - Special case detection
-    - Diversity algorithms for variations
-
-11. **Local AI Generation (Optional)** - When enabled:
-    - Serializes extracted context into a structured LLM prompt
-    - Dispatches generation requests to local Ollama daemon
-    - Validates AI output against Conventional Commit standards
-    - Provides deterministic fallback to heuristic engine on error
-
-## Commit Types
-
-Gitmit supports the following commit types (automatically detected):
-
-| Type | Description |
-|------|-------------|
-| **feat** | New features |
-| **fix** | Bug fixes |
-| **refactor** | Code refactoring |
-| **chore** | Maintenance tasks |
-| **test** | Adding or updating tests |
-| **docs** | Documentation changes |
-| **style** | Code style changes (formatting, whitespace) |
-| **perf** | Performance improvements |
-| **ci** | CI/CD configuration changes |
-| **build** | Build system changes |
-| **security** | Security improvements |
-| **config** | Configuration changes |
-| **deploy** | Deployment changes |
-| **revert** | Reverting previous commits |
-| **wip** | Work in progress |
-
-## Examples
-
-### Basic Interactive Usage
-
-```bash
-# Stage your changes
-git add internal/api/handler.go
-
-# Run gitmit
-gitmit
-
-# Output:
-💡 Suggested commit message:
-feat(api): implement authentication middleware
-
-Actions:
-  y - Accept and commit
-  n - Reject and exit
-  e - Edit message manually
-  r - Regenerate different suggestion
-
-Choice [y/n/e/r]: r
-
-# After pressing 'r':
-💡 Alternative suggestion #1:
-feat(api): add role-based access control for authentication
-
-Choice [y/n/e/r]: y
-
-✅ Changes committed successfully.
-```
-
-### Multiple Suggestions Mode
-
-```bash
-git add .
-gitmit propose -s
-
-# Output:
-💡 Ranked Suggestions:
-1. feat(api): implement user authentication strategy (recommended)
-2. feat(api): add token-based access via middleware
-3. feat(auth): integrate OAuth provider for secure access
-4. feat(api): expose new endpoint for authentication
-5. feat(auth): implement MFA/2FA support for security
-```
-
-### Context Analysis
-
-```bash
-gitmit propose --context
-
-# Output:
-📊 Analysis Context:
-Action: feat
-Topic:  api
-Item:   handler
-Purpose: authentication
-Scope:  auth
-Files:  +127 -15
-Types:  [go]
-
-💡 Suggested commit message:
-feat(auth): implement handler authentication strategy
-```
-
-### Edit Mode
-
-```bash
-gitmit
-
-# Output:
-💡 Suggested commit message:
-feat(api): add new endpoint
-
-Choice [y/n/e/r]: e
-
-📝 Edit the commit message:
-Current: feat(api): add new endpoint
-New message: feat(api): add user registration endpoint with validation
-
-✓ Updated commit message:
-feat(api): add user registration endpoint with validation
-
-Choice [y/n/e/r]: y
-✅ Changes committed successfully.
-```
-
-## Configuration
-
-Gitmit works out of the box without any configuration, but you can customize its behavior using a configuration file.
-
-### Configuration Hierarchy
-
-1. **Local** (`.gitmit.json`) - Project-specific settings in current directory
-2. **Global** (`~/.gitmit.json`) - User-wide settings in home directory
-3. **Default** (Embedded) - Built-in defaults
-
-Settings from higher priority configs override lower priority ones.
-
-### Quick Start
-
-```bash
-# Create local config with auto-detected project type
-gitmit init
-
-# Create global config
-gitmit init --global
-```
-
-The `init` command automatically:
-- Detects your project type (Go, Node.js, Python, etc.)
-- Generates language-specific keyword mappings
-- Creates customizable topic mappings
-- Sets up keyword scoring weights
-
-### Configuration Options
-
-**Core Features:**
-- **Project Type Detection** - Automatically identifies language/framework
-- **Keyword Scoring** - Define action-specific keywords and weights
-- **Topic Mappings** - Map file paths to commit scopes
-- **Diff Stat Threshold** - Control added/deleted line ratio analysis
-- **Custom Templates** - Define your own commit message patterns (coming soon)
-
-**Example `.gitmit.json`:**
-```json
-{
-  "projectType": "go",
-  "diffStatThreshold": 0.5,
-  "topicMappings": {
-    "internal/api": "api",
-    "internal/database": "db"
-  },
-  "keywords": {
-    "feat": {
-      "func": 3,
-      "class": 2
-    },
-    "fix": {
-      "bug": 3,
-      "error": 2
-    }
-  }
-}
-```
-
-For detailed configuration documentation, see [CONFIGURATION.md](CONFIGURATION.md).
-
-### Intelligence Built-In
-
-All intelligence is built-in using:
-
-- **Template-based generation** with 100+ curated commit message templates
-- **Pattern matching algorithms** for context detection
-- **Weighted scoring system** for template selection
-- **Similarity detection** for diverse variations
-- **Commit history tracking** to avoid repetition
-- **Language-aware symbol extraction** via regex
-- **Keyword scoring** based on git diff analysis
-- **Diff stat analysis** for intent inference
-
-No AI, APIs, or external services required. Everything runs locally and offline.
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Roadmap
-
-- [ ] Git hooks integration
-- [ ] Team commit templates
-- [ ] Commit message validation
-- [ ] Integration with issue trackers
-- [ ] Multi-language support
-- [ ] Commit message templates
-- [x] Branch-based suggestions
-- [x] Commit message history learning
+<p align="center">
+  Built with ❤️ by <a href="https://github.com/andev0x">andev0x</a>
+</p>
