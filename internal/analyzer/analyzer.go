@@ -21,6 +21,7 @@ type CommitMessage struct {
 	IsMajor           bool
 	TotalAdded        int
 	TotalRemoved      int
+	Files             []string
 	FileExtensions    []string
 	RenamedFiles      []*parser.Change
 	CopiedFiles       []*parser.Change
@@ -55,6 +56,7 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		TotalRemoved: totalRemoved,
 	}
 
+	var allFiles []string
 	var allFileExtensions []string
 	var allTopics []string
 	var allPurposes []string
@@ -65,6 +67,7 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 	var allPatterns []string
 
 	for _, change := range a.changes {
+		allFiles = append(allFiles, change.File)
 		if change.IsRename {
 			commitMessage.RenamedFiles = append(commitMessage.RenamedFiles, change)
 		}
@@ -95,6 +98,7 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		allPatterns = append(allPatterns, patterns...)
 	}
 
+	commitMessage.Files = uniqueStrings(allFiles)
 	commitMessage.FileExtensions = uniqueStrings(allFileExtensions)
 	commitMessage.DetectedFunctions = uniqueStrings(allFunctions)
 	commitMessage.DetectedStructs = uniqueStrings(allStructs)

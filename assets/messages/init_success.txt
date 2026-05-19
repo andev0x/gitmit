@@ -1,0 +1,7 @@
+
+You can now customize the configuration to fit your project's needs.
+
+Configuration hierarchy:
+  1. Local (.gitmit.json) - project-specific settings
+  2. Global (~/.gitmit.json) - user-wide settings
+  3. Default (embedded) - built-in defaults

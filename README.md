@@ -12,6 +12,8 @@ A lightweight CLI tool that analyzes your staged changes and generates professio
 
 ## Features
 
+- **Hybrid Intelligence** - Merges deterministic heuristic algorithms with deep semantic understanding via Local LLMs
+- **Local AI Integration (Ollama)** - Seamlessly integrates with Ollama to generate context-rich commit messages offline
 - **Intelligent Analysis** - Analyzes git status and diff to understand your changes using advanced pattern detection
 - **Conventional Commits** - Follows the Conventional Commits specification for standardized messages
 - **Configuration Hierarchy** - Local (`.gitmit.json`) → Global (`~/.gitmit.json`) → Default (Embedded) config support
@@ -30,8 +32,44 @@ A lightweight CLI tool that analyzes your staged changes and generates professio
 - **Pattern Detection** - Detects error handling, tests, API changes, database operations, and more
 - **Multiple Commit Types** - Supports feat, fix, refactor, chore, test, docs, style, perf, ci, build, security, and more
 - **Zero Configuration** - Works out of the box with sensible defaults
-- **Offline First** - Complete offline operation, no AI or external dependencies required
+- **Hybrid Offline Approach** - Operates completely locally; chooses between heuristic rules or local AI
 - **History Tracking** - Learns from your commit history to avoid repetitive suggestions
+
+
+## Hybrid Intelligence: Local AI via Ollama
+
+Gitmit evolves from a rule-based utility into a **Hybrid Intelligence** tool by integrating with **Ollama**. This allows you to use powerful local LLMs (like Qwen2.5-Coder) to generate highly descriptive and contextually accurate commit messages without sacrificing privacy or performance.
+
+### Prerequisites
+
+1.  **Install Ollama**: Download from [ollama.com](https://ollama.com)
+2.  **Pull the Model**:
+    ```bash
+    ollama pull qwen2.5-coder:3b
+    ```
+
+### Enabling the AI Engine
+
+To switch from the default heuristic engine to the AI engine, update your `.gitmit.json`:
+
+```json
+{
+  "engine": "ollama",
+  "ollama": {
+    "model": "qwen2.5-coder:3b",
+    "url": "http://localhost:11434",
+    "temperature": 0.2
+  }
+}
+```
+
+### How the Hybrid Pipeline Works
+
+Gitmit uses a tiered approach to ensure you always get a high-quality suggestion:
+
+1.  **Refined Context Engineering**: Instead of piping raw diffs, Gitmit extracts structured metadata (modified files, symbols, change ratios, project type) and feeds it into a strict system prompt.
+2.  **Local LLM Processing**: Ollama processes the context using your specified model to generate a precise Conventional Commit message.
+3.  **Deterministic Fallback**: If the Ollama daemon is unreachable, the model is missing, or the output is malformatted, Gitmit **instantly falls back** to the Phase 1 Heuristic engine. Your workflow remains uninterrupted.
 
 
 ## Installation
@@ -110,8 +148,9 @@ Actions:
   n - Reject and exit
   e - Edit message manually
   r - Regenerate different suggestion
+  a - Upgrade suggestion with Local AI (Ollama)
 
-Choice [y/n/e/r]:
+Choice [y/n/e/r/a]:
 ```
 
 **Interactive Options:**
@@ -119,6 +158,8 @@ Choice [y/n/e/r]:
 - **`n`** - Reject and exit without committing
 - **`e`** - Edit the message manually with your own text
 - **`r`** - Regenerate a completely different suggestion using intelligent variation algorithms
+- **`a`** - **Upgrade to Local AI**: If you are using the heuristic engine, this attempts to connect to Ollama for a more semantic suggestion
+- **`h`** - **Fallback to Heuristic**: If you are in AI mode, this switches back to the classic rule-based engine
 
 ### Command-Line Options
 
@@ -236,6 +277,12 @@ Gitmit uses intelligent offline algorithms to analyze your changes:
     - File type context
     - Special case detection
     - Diversity algorithms for variations
+
+11. **Local AI Generation (Optional)** - When enabled:
+    - Serializes extracted context into a structured LLM prompt
+    - Dispatches generation requests to local Ollama daemon
+    - Validates AI output against Conventional Commit standards
+    - Provides deterministic fallback to heuristic engine on error
 
 ## Commit Types
 
