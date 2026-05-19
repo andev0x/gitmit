@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitmit/cmd"
+	"github.com/andev0x/gitmit/cmd"
 )
 
 func main() {

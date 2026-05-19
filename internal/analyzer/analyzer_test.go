@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"gitmit/internal/config"
-	"gitmit/internal/parser"
+	"github.com/andev0x/gitmit/internal/config"
+	"github.com/andev0x/gitmit/internal/parser"
 	"testing"
 )
 
