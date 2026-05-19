@@ -9,6 +9,8 @@ import (
 
 // Config represents the structure of .gitmit.json
 type Config struct {
+	Engine            string                       `json:"engine"`            // heuristic or ollama
+	Ollama            OllamaConfig                 `json:"ollama"`            // Ollama specific config
 	TopicMappings     map[string]string            `json:"topicMappings"`
 	KeywordMappings   map[string]string            `json:"keywordMappings"`
 	ProjectType       string                       `json:"projectType"`       // go, nodejs, python, etc.
@@ -17,10 +19,23 @@ type Config struct {
 	DiffStatThreshold float64                      `json:"diffStatThreshold"` // Threshold for add/delete ratio
 }
 
+// OllamaConfig represents the structure of the ollama configuration block
+type OllamaConfig struct {
+	Model       string  `json:"model"`
+	URL         string  `json:"url"`
+	Temperature float64 `json:"temperature"`
+}
+
 // LoadConfig loads the configuration with hierarchy: Local (.gitmit.json) → Global (~/.gitmit.json) → Default (embedded)
 func LoadConfig() (*Config, error) {
 	// Initialize with default empty config
 	cfg := &Config{
+		Engine: "heuristic",
+		Ollama: OllamaConfig{
+			Model:       "qwen2.5-coder:3b",
+			URL:         "http://localhost:11434",
+			Temperature: 0.2,
+		},
 		TopicMappings:     make(map[string]string),
 		KeywordMappings:   make(map[string]string),
 		Keywords:          make(map[string]map[string]int),
@@ -186,6 +201,22 @@ func mergeConfigFromFile(cfg *Config, path string) error {
 	}
 
 	// Merge the loaded config into the existing config
+	// Engine
+	if fileCfg.Engine != "" {
+		cfg.Engine = fileCfg.Engine
+	}
+
+	// Ollama
+	if fileCfg.Ollama.Model != "" {
+		cfg.Ollama.Model = fileCfg.Ollama.Model
+	}
+	if fileCfg.Ollama.URL != "" {
+		cfg.Ollama.URL = fileCfg.Ollama.URL
+	}
+	if fileCfg.Ollama.Temperature > 0 {
+		cfg.Ollama.Temperature = fileCfg.Ollama.Temperature
+	}
+
 	// Topic mappings
 	if fileCfg.TopicMappings != nil {
 		for k, v := range fileCfg.TopicMappings {

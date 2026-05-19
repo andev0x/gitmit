@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"gitmit/internal/analyzer"
+	"gitmit/internal/ai"
 	"gitmit/internal/config"
 	"gitmit/internal/formatter"
 	"gitmit/internal/history"
@@ -90,6 +91,37 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	f := formatter.NewFormatter()
+
+	// Calculate Heuristic Suggestion (Always available)
+	heuristicMsg, err := templater.GetMessage(commitMessage)
+	if err != nil {
+		return err
+	}
+	formattedHeuristic := f.FormatMessage(heuristicMsg, commitMessage.IsMajor)
+
+	var aiMsg string
+	var finalMessage string
+	var usingAI bool
+
+	// AI Engine Logic
+	if cfg.Engine == "ollama" {
+		prompt, err := ai.RenderPrompt(commitMessage, cfg.ProjectType, branchName)
+		if err == nil {
+			client := ai.NewOllamaClient(cfg.Ollama)
+			aiResponse, err := client.Generate(prompt)
+			if err == nil && ai.IsValidCommitMessage(aiResponse) {
+				aiMsg = strings.TrimSpace(aiResponse)
+				usingAI = true
+				finalMessage = aiMsg
+			}
+		}
+	}
+
+	if !usingAI {
+		finalMessage = formattedHeuristic
+	}
+
 	// Show analysis context if requested
 	if contextFlag || debugFlag {
 		color.Blue("\n📊 Analysis Context:")
@@ -111,182 +143,165 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 	}
 
-	if debugFlag {
-		// Print more detailed debug info
-		fmt.Printf("Full analyzer output: %+v\n", commitMessage)
-		if act, tpls := templater.DebugInfo(commitMessage); tpls != nil {
-			fmt.Printf("Template group: %s\n", act)
-			fmt.Printf("Candidate templates:\n")
-			for i, t := range tpls {
-				if i >= 10 {
-					break
-				}
-				fmt.Printf("  - %s\n", t)
-			}
-		}
-	}
-
-	// Get multiple suggestions if interactive/suggestions mode
-	var suggestions []string
-	if interactiveFlag || suggestionsFlag {
-		suggestions, err = templater.GetSuggestions(commitMessage, maxSuggestions)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Just get best message
-		msg, err := templater.GetMessage(commitMessage)
-		if err != nil {
-			return err
-		}
-		suggestions = []string{msg}
-	}
-
-	formatter := formatter.NewFormatter()
-
-	if len(suggestions) == 0 {
-		return fmt.Errorf("no suitable commit messages found")
-	}
-
-	// Format all suggestions
-	formattedSuggestions := make([]string, len(suggestions))
-	for i, msg := range suggestions {
-		formattedSuggestions[i] = formatter.FormatMessage(msg, commitMessage.IsMajor)
-	}
-
-	// Default to first/best suggestion
-	finalMessage := formattedSuggestions[0]
-
-	if suggestionsFlag {
-		// Show all suggestions with ranking
+	if suggestionsFlag && !usingAI {
+		// Show ranked suggestions only for Heuristic
 		color.Blue("\n💡 Ranked Suggestions:")
-		for i, msg := range formattedSuggestions {
-			if i == 0 {
-				color.Green("1. %s (recommended)\n", msg)
+		suggestions, _ := templater.GetSuggestions(commitMessage, maxSuggestions)
+		for i, msg := range suggestions {
+			fmt.Printf("%d. %s\n", i+1, f.FormatMessage(msg, commitMessage.IsMajor))
+		}
+		fmt.Println()
+	}
+
+	// Interactive Mode logic
+	if !summaryFlag && !autoFlag && !dryRunFlag {
+		usedSuggestions := map[string]bool{finalMessage: true}
+		regenerationCount := 0
+		const maxRegenerations = 10
+
+		for {
+			fmt.Println()
+			if usingAI {
+				color.Cyan("Generated via: Local AI Engine [%s]", cfg.Ollama.Model)
 			} else {
-				fmt.Printf("%d. %s\n", i+1, msg)
+				color.Blue("Generated via: Heuristic Engine [Matrix Scored]")
 			}
-		}
-		fmt.Println()
-	}
 
-	if interactiveFlag && len(formattedSuggestions) > 1 {
-		// TODO: Add interactive selection using a proper terminal UI library
-		// For now, just show numbered options and read input
-		color.Blue("\n📝 Choose a commit message:")
-		for i, msg := range formattedSuggestions {
-			fmt.Printf("%d. %s\n", i+1, msg)
-		}
-		fmt.Printf("\nEnter number (1-%d) [1]: ", len(formattedSuggestions))
+			color.Green("\n💡 Suggested commit message:")
+			fmt.Printf("%s\n\n", finalMessage)
 
-		var choice string
-		fmt.Scanln(&choice)
+			color.Blue("Actions:")
+			fmt.Println("  y - Accept and commit")
+			fmt.Println("  n - Reject and exit")
+			fmt.Println("  e - Edit message manually")
 
-		if choice != "" {
-			var num int
-			if _, err := fmt.Sscanf(choice, "%d", &num); err == nil && num > 0 && num <= len(formattedSuggestions) {
-				finalMessage = formattedSuggestions[num-1]
+			if usingAI {
+				fmt.Println("  r - Regenerate an alternative AI suggestion")
+				fmt.Println("  h - Fallback to classic Heuristic suggestion")
+			} else {
+				fmt.Println("  r - Regenerate different suggestion (Heuristic)")
+				fmt.Println("  a - Upgrade suggestion with Local AI (Ollama)")
 			}
-		}
-		fmt.Println()
+			fmt.Printf("\nChoice [y/n/e/r/%s]: ", map[bool]string{true: "h", false: "a"}[usingAI])
 
-	}
+			reader := bufio.NewReader(os.Stdin)
+			input, _ := reader.ReadString('\n')
+			choice := strings.TrimSpace(strings.ToLower(input))
+			fmt.Println()
 
-	// If not in summary mode, show the suggestion and prompt for action
-	if !summaryFlag {
-		color.Green("\n💡 Suggested commit message:")
-		fmt.Printf("%s\n\n", finalMessage)
+			switch choice {
+			case "y", "":
+				// Commit the message
+				commitCmd := exec.Command("git", "commit", "-m", finalMessage)
+				commitCmd.Stdout = os.Stdout
+				commitCmd.Stderr = os.Stderr
+				err := commitCmd.Run()
+				if err != nil {
+					return fmt.Errorf("error committing changes: %w", err)
+				}
+				color.Green("✅ Changes committed successfully.")
+				history.AddEntry(finalMessage, "") // Save to history
+				if err := history.SaveHistory(); err != nil {
+					return err
+				}
+				return nil
 
-		if !autoFlag && !dryRunFlag {
-			// Track used suggestions to avoid repetition with 'r' option
-			usedSuggestions := map[string]bool{finalMessage: true}
-			regenerationCount := 0
-			const maxRegenerations = 10
+			case "n":
+				color.Yellow("❌ Commit cancelled.")
+				return nil
 
-			for {
-				color.Blue("Actions:")
-				fmt.Println("  y - Accept and commit")
-				fmt.Println("  n - Reject and exit")
-				fmt.Println("  e - Edit message manually")
-				fmt.Println("  r - Regenerate different suggestion")
-				fmt.Printf("\nChoice [y/n/e/r]: ")
+			case "e":
+				color.Blue("📝 Edit the commit message:")
+				fmt.Printf("Current: %s\n", finalMessage)
+				fmt.Print("New message: ")
 
-				reader := bufio.NewReader(os.Stdin)
-				choice, _ := reader.ReadString('\n')
-				choice = strings.TrimSpace(strings.ToLower(choice))
-				fmt.Println()
+				editedMessage, _ := reader.ReadString('\n')
+				editedMessage = strings.TrimSpace(editedMessage)
 
-				switch choice {
-				case "y", "":
-					// Commit the message
-					commitCmd := exec.Command("git", "commit", "-m", finalMessage)
-					commitCmd.Stdout = os.Stdout
-					commitCmd.Stderr = os.Stderr
-					err := commitCmd.Run()
-					if err != nil {
-						return fmt.Errorf("error committing changes: %w", err)
-					}
-					color.Green("✅ Changes committed successfully.")
-					history.AddEntry(finalMessage, "") // Save to history
-					if err := history.SaveHistory(); err != nil {
-						return err
-					}
-					return nil
-
-				case "n":
-					color.Yellow("❌ Commit cancelled.")
-					return nil
-
-				case "e":
-					color.Blue("📝 Edit the commit message:")
-					fmt.Printf("Current: %s\n", finalMessage)
-					fmt.Print("New message: ")
-
-					editedMessage, _ := reader.ReadString('\n')
-					editedMessage = strings.TrimSpace(editedMessage)
-
-					if editedMessage != "" {
-						finalMessage = editedMessage
-						usedSuggestions[finalMessage] = true
-						// Show the edited message and prompt again
-						color.Green("\n✓ Updated commit message:")
-						fmt.Printf("%s\n\n", finalMessage)
-						continue
-					} else {
-						color.Yellow("⚠ No changes made. Keeping current message.\n\n")
-						continue
-					}
-
-				case "r":
-					if regenerationCount >= maxRegenerations {
-						color.Yellow("⚠ Maximum regeneration attempts reached.\n\n")
-						continue
-					}
-
-					// Generate a new alternative suggestion
-					newSuggestion, err := templater.GetAlternativeSuggestion(commitMessage, usedSuggestions)
-					if err != nil || newSuggestion == "" {
-						color.Yellow("⚠ Could not generate alternative suggestion. Try editing instead.\n\n")
-						continue
-					}
-
-					regenerationCount++
-					finalMessage = formatter.FormatMessage(newSuggestion, commitMessage.IsMajor)
+				if editedMessage != "" {
+					finalMessage = editedMessage
 					usedSuggestions[finalMessage] = true
+					color.Green("\n✓ Updated commit message:")
+				} else {
+					color.Yellow("⚠ No changes made. Keeping current message.\n")
+				}
+				continue
 
-					color.Green("\n💡 Alternative suggestion #%d:", regenerationCount)
-					fmt.Printf("%s\n\n", finalMessage)
-					continue
-
-				default:
-					color.Yellow("⚠ Invalid choice. Please select y, n, e, or r.\n\n")
+			case "r":
+				if regenerationCount >= maxRegenerations {
+					color.Yellow("⚠ Maximum regeneration attempts reached.\n")
 					continue
 				}
+
+				if usingAI {
+					prompt, err := ai.RenderPrompt(commitMessage, cfg.ProjectType, branchName)
+					if err == nil {
+						client := ai.NewOllamaClient(cfg.Ollama)
+						aiResponse, err := client.Generate(prompt)
+						if err == nil && ai.IsValidCommitMessage(aiResponse) {
+							finalMessage = strings.TrimSpace(aiResponse)
+							regenerationCount++
+						}
+					}
+				} else {
+					newSuggestion, err := templater.GetAlternativeSuggestion(commitMessage, usedSuggestions)
+					if err == nil && newSuggestion != "" {
+						finalMessage = f.FormatMessage(newSuggestion, commitMessage.IsMajor)
+						regenerationCount++
+					}
+				}
+				usedSuggestions[finalMessage] = true
+				continue
+
+			case "a":
+				if usingAI {
+					continue
+				}
+				// Try to connect to Ollama
+				prompt, err := ai.RenderPrompt(commitMessage, cfg.ProjectType, branchName)
+				if err == nil {
+					client := ai.NewOllamaClient(cfg.Ollama)
+					aiResponse, err := client.Generate(prompt)
+					if err == nil && ai.IsValidCommitMessage(aiResponse) {
+						aiMsg = strings.TrimSpace(aiResponse)
+						finalMessage = aiMsg
+						usingAI = true
+					} else {
+						color.Red("\n⚠️  Ollama connection not detected on %s", cfg.Ollama.URL)
+						fmt.Println("To enable Local AI generation, please ensure:")
+						fmt.Println("  1. Ollama is running locally (`ollama serve`)")
+						fmt.Printf("  2. The required model is pulled (`ollama pull %s`)\n", cfg.Ollama.Model)
+						fmt.Println("  3. Your .gitmit.json sets \"engine\": \"ollama\"")
+						fmt.Println("\nFalling back to interactive options...")
+					}
+				}
+				continue
+
+			case "h":
+				if !usingAI {
+					continue
+				}
+				usingAI = false
+				finalMessage = formattedHeuristic
+				continue
+
+			default:
+				color.Yellow("⚠ Invalid choice. Please select a valid option.\n")
+				continue
 			}
 		}
-	} else {
-		fmt.Println(finalMessage)
 	}
+
+	// Handle non-interactive cases (summary, auto, dry-run)
+	if summaryFlag {
+		fmt.Println(finalMessage)
+		return nil
+	}
+
+	color.Green("\n💡 Suggested commit message:")
+	fmt.Printf("%s\n\n", finalMessage)
+
+
 
 	// Handle auto-commit and dry-run cases
 	if autoFlag && !dryRunFlag {
