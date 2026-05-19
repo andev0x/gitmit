@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/template"
 
+	"gitmit/assets"
 	"gitmit/internal/analyzer"
 )
 
@@ -25,28 +26,13 @@ type DiffSummary struct {
 	Ratio float64
 }
 
-const promptTemplate = `You are an expert developer assistant. Analyze the provided structured git diff metadata and generate a single-line commit message following the Conventional Commits specification.
-
-Guidelines:
-1. Format MUST be: <type>(<scope>): <short description in present tense>
-2. Allowed types: feat, fix, refactor, chore, test, docs, style, perf, ci, build, security
-3. Do NOT include any markdown, backticks, quotes, or introductory text like "Here is your commit message:".
-4. Output ONLY the raw string of the commit message.
-
-Metadata Context:
-- Project Type: {{.ProjectType}}
-- Active Branch Name: {{.CurrentBranch}}
-- Detected Intent/Type Bonus: {{.RecommendedType}}
-- Modified Files: {{range .Files}}{{.}}, {{end}}
-- Key Code Symbols Altered: {{range .CodeSymbols}}{{.}}, {{end}}
-- Dependency Changes: {{.DependencyAlert}}
-- Added/Deleted Line Ratio: {{printf "%.2f" .DiffSummary.Ratio}}
-
-Output:
-`
-
 // RenderPrompt generates the prompt string using the provided context
 func RenderPrompt(msg *analyzer.CommitMessage, projectType, branchName string) (string, error) {
+	promptTemplate, err := assets.GetPrompt()
+	if err != nil {
+		return "", fmt.Errorf("error loading prompt template: %w", err)
+	}
+
 	tmpl, err := template.New("prompt").Parse(promptTemplate)
 	if err != nil {
 		return "", fmt.Errorf("error parsing prompt template: %w", err)

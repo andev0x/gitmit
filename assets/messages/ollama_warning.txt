@@ -1,0 +1,7 @@
+⚠️  Ollama connection not detected on {{.URL}}
+To enable Local AI generation, please ensure:
+  1. Ollama is running locally (`ollama serve`)
+  2. The required model is pulled (`ollama pull {{.Model}}`)
+  3. Your .gitmit.json sets "engine": "ollama"
+
+Falling back to interactive options...

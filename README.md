@@ -148,8 +148,9 @@ Actions:
   n - Reject and exit
   e - Edit message manually
   r - Regenerate different suggestion
+  a - Upgrade suggestion with Local AI (Ollama)
 
-Choice [y/n/e/r]:
+Choice [y/n/e/r/a]:
 ```
 
 **Interactive Options:**
@@ -157,6 +158,8 @@ Choice [y/n/e/r]:
 - **`n`** - Reject and exit without committing
 - **`e`** - Edit the message manually with your own text
 - **`r`** - Regenerate a completely different suggestion using intelligent variation algorithms
+- **`a`** - **Upgrade to Local AI**: If you are using the heuristic engine, this attempts to connect to Ollama for a more semantic suggestion
+- **`h`** - **Fallback to Heuristic**: If you are in AI mode, this switches back to the classic rule-based engine
 
 ### Command-Line Options
 

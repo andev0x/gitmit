@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
+	"gitmit/assets"
 	"gitmit/internal/analyzer"
 	"gitmit/internal/ai"
 	"gitmit/internal/config"
@@ -267,12 +268,8 @@ func runPropose(cmd *cobra.Command, args []string) error {
 						finalMessage = aiMsg
 						usingAI = true
 					} else {
-						color.Red("\n⚠️  Ollama connection not detected on %s", cfg.Ollama.URL)
-						fmt.Println("To enable Local AI generation, please ensure:")
-						fmt.Println("  1. Ollama is running locally (`ollama serve`)")
-						fmt.Printf("  2. The required model is pulled (`ollama pull %s`)\n", cfg.Ollama.Model)
-						fmt.Println("  3. Your .gitmit.json sets \"engine\": \"ollama\"")
-						fmt.Println("\nFalling back to interactive options...")
+						warning, _ := assets.RenderOllamaWarning(cfg.Ollama.URL, cfg.Ollama.Model)
+						color.Red("\n%s", warning)
 					}
 				}
 				continue

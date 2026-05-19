@@ -8,6 +8,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
+	"gitmit/assets"
 	"gitmit/internal/config"
 )
 
@@ -152,11 +153,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	color.Green("✅ Created config file: %s", configPath)
 	color.Blue("\n📝 Detected project type: %s", projectType)
-	fmt.Println("\nYou can now customize the configuration to fit your project's needs.")
-	fmt.Println("\nConfiguration hierarchy:")
-	fmt.Println("  1. Local (.gitmit.json) - project-specific settings")
-	fmt.Println("  2. Global (~/.gitmit.json) - user-wide settings")
-	fmt.Println("  3. Default (embedded) - built-in defaults")
+	
+	msg, _ := assets.GetInitSuccess()
+	fmt.Println(msg)
 
 	return nil
 }
