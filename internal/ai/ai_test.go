@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/internal/analyzer"
 )
 
 func TestRenderPrompt(t *testing.T) {

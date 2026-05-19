@@ -6,8 +6,8 @@ import (
 	"strings"
 	"text/template"
 
-	"gitmit/assets"
-	"gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/assets"
+	"github.com/andev0x/gitmit/internal/analyzer"
 )
 
 // PromptContext represents the data structure passed to the prompt template

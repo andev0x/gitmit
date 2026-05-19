@@ -10,14 +10,14 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
-	"gitmit/assets"
-	"gitmit/internal/analyzer"
-	"gitmit/internal/ai"
-	"gitmit/internal/config"
-	"gitmit/internal/formatter"
-	"gitmit/internal/history"
-	"gitmit/internal/parser"
-	"gitmit/internal/templater"
+	"github.com/andev0x/gitmit/assets"
+	"github.com/andev0x/gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/internal/ai"
+	"github.com/andev0x/gitmit/internal/config"
+	"github.com/andev0x/gitmit/internal/formatter"
+	"github.com/andev0x/gitmit/internal/history"
+	"github.com/andev0x/gitmit/internal/parser"
+	"github.com/andev0x/gitmit/internal/templater"
 )
 
 var (

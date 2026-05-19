@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"gitmit/internal/config"
+	"github.com/andev0x/gitmit/internal/config"
 )
 
 // OllamaRequest represents the request body for Ollama's /api/generate endpoint

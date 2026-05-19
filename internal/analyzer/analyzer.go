@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"gitmit/internal/config"
-	"gitmit/internal/history"
-	"gitmit/internal/parser"
+	"github.com/andev0x/gitmit/internal/config"
+	"github.com/andev0x/gitmit/internal/history"
+	"github.com/andev0x/gitmit/internal/parser"
 )
 
 // CommitMessage represents the analyzed commit message components

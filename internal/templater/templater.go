@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"gitmit/internal/analyzer"
-	"gitmit/internal/history"
+	"github.com/andev0x/gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/internal/history"
 )
 
 //go:embed templates.json

@@ -8,8 +8,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
-	"gitmit/assets"
-	"gitmit/internal/config"
+	"github.com/andev0x/gitmit/assets"
+	"github.com/andev0x/gitmit/internal/config"
 )
 
 var (
