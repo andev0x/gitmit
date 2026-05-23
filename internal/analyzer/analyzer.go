@@ -1290,11 +1290,16 @@ func (a *Analyzer) summarizeDiff(diff string) string {
 	var summary strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(diff))
 	lineCount := 0
-	maxLines := 20 // Limit lines per file to avoid context bloat
+	maxLines := 25 // Limit lines per file to avoid context bloat
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Only include added/removed lines and hunk headers
+		// Skip binary files or extremely long lines
+		if len(line) > 500 {
+			continue
+		}
+
 		if strings.HasPrefix(line, "+") || strings.HasPrefix(line, "-") || strings.HasPrefix(line, "@@") {
 			if strings.HasPrefix(line, "+++") || strings.HasPrefix(line, "---") {
 				continue
@@ -1304,7 +1309,7 @@ func (a *Analyzer) summarizeDiff(diff string) string {
 			lineCount++
 		}
 		if lineCount >= maxLines {
-			summary.WriteString("... (truncated)\n")
+			summary.WriteString("... (rest of file truncated)\n")
 			break
 		}
 	}

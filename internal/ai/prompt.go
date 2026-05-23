@@ -8,6 +8,7 @@ import (
 
 	"github.com/andev0x/gitmit/assets"
 	"github.com/andev0x/gitmit/internal/analyzer"
+	"github.com/andev0x/gitmit/internal/history"
 )
 
 // PromptContext represents the data structure passed to the prompt template
@@ -20,6 +21,7 @@ type PromptContext struct {
 	DependencyAlert string
 	DiffSummary     DiffSummary
 	DiffContent     string
+	RecentCommits   []string
 }
 
 // DiffSummary contains ratio of changes
@@ -61,6 +63,9 @@ func RenderPrompt(msg *analyzer.CommitMessage, projectType, branchName string) (
 		ratio = float64(msg.TotalAdded) / float64(total)
 	}
 
+	// Fetch recent commits for style reference
+	recentCommits, _ := history.GetRecentCommits(5)
+
 	ctx := PromptContext{
 		ProjectType:     projectType,
 		CurrentBranch:   branchName,
@@ -71,7 +76,8 @@ func RenderPrompt(msg *analyzer.CommitMessage, projectType, branchName string) (
 		DiffSummary: DiffSummary{
 			Ratio: ratio,
 		},
-		DiffContent: msg.FullDiff,
+		DiffContent:   msg.FullDiff,
+		RecentCommits: recentCommits,
 	}
 
 	var buf bytes.Buffer

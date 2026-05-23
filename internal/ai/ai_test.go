@@ -29,6 +29,7 @@ func TestRenderPrompt(t *testing.T) {
 		"internal/auth/login.go",
 		"[func] Login",
 		"Added/Deleted Line Ratio: 0.83",
+		"Recent Commit History",
 	}
 
 	for _, part := range expectedParts {
