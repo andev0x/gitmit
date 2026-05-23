@@ -1,10 +1,13 @@
-You are an expert developer assistant. Analyze the provided structured git diff metadata and generate a single-line commit message following the Conventional Commits specification.
+You are an expert developer assistant. Analyze the provided structured git diff metadata and generate a commit message following the Conventional Commits specification.
 
 Guidelines:
 1. Format MUST be: <type>(<scope>): <short description in present tense>
 2. Allowed types: feat, fix, refactor, chore, test, docs, style, perf, ci, build, security
-3. Do NOT include any markdown, backticks, quotes, or introductory text like "Here is your commit message:".
-4. Output ONLY the raw string of the commit message.
+3. If the changes are complex, you MAY include a body separated by a blank line after the subject.
+4. Keep the subject line short (aim for ~50 characters).
+5. Wrap body lines at ~72 characters.
+6. Do NOT include any markdown, backticks, quotes, or introductory text like "Here is your commit message:".
+7. Output ONLY the raw string of the commit message.
 
 Metadata Context:
 - Project Type: {{.ProjectType}}
@@ -14,5 +17,8 @@ Metadata Context:
 - Key Code Symbols Altered: {{range .CodeSymbols}}{{.}}, {{end}}
 - Dependency Changes: {{.DependencyAlert}}
 - Added/Deleted Line Ratio: {{printf "%.2f" .DiffSummary.Ratio}}
+
+Summarized Git Diff:
+{{.DiffContent}}
 
 Output:

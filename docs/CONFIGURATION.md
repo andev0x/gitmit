@@ -133,6 +133,24 @@ Defines the confidence weights for different signal sources. Only used when `nor
 }
 ```
 
+### Message Length Constraints
+
+**`maxSubjectLength`** (int, default: 50)
+
+Specifies the maximum character length for the first line (subject) of the commit message. If the generated or edited subject exceeds this limit, it will be automatically wrapped to the next line.
+
+**`maxBodyLength`** (int, default: 72)
+
+Specifies the maximum character length for each line in the body of the commit message. If the body text exceeds this limit, it will be wrapped at word boundaries.
+
+**Example:**
+```json
+{
+  "maxSubjectLength": 50,
+  "maxBodyLength": 72
+}
+```
+
 ### Topic Mappings
 
 **`topicMappings`** (object)

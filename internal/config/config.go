@@ -19,6 +19,8 @@ type Config struct {
 	DiffStatThreshold float64                      `json:"diffStatThreshold"` // Threshold for add/delete ratio
 	NormalizeScoring  bool                         `json:"normalizeScoring"`  // Whether to use normalized confidence weights
 	SignalWeights     map[string]float64           `json:"signalWeights"`     // Weights for different signal sources
+	MaxSubjectLength  int                          `json:"maxSubjectLength"`  // Max length for the first line
+	MaxBodyLength     int                          `json:"maxBodyLength"`     // Max length for body lines
 }
 
 // OllamaConfig represents the structure of the ollama configuration block
@@ -50,6 +52,8 @@ func LoadConfig() (*Config, error) {
 			"keywords": 0.25,
 			"patterns": 0.15,
 		},
+		MaxSubjectLength: 50,
+		MaxBodyLength:    72,
 	}
 
 	// 1. Try to load embedded default config (optional)
@@ -289,6 +293,14 @@ func mergeConfigFromFile(cfg *Config, path string) error {
 		for k, v := range fileCfg.SignalWeights {
 			cfg.SignalWeights[k] = v
 		}
+	}
+
+	// Message lengths
+	if fileCfg.MaxSubjectLength > 0 {
+		cfg.MaxSubjectLength = fileCfg.MaxSubjectLength
+	}
+	if fileCfg.MaxBodyLength > 0 {
+		cfg.MaxBodyLength = fileCfg.MaxBodyLength
 	}
 
 	return nil

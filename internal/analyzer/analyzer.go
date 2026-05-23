@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"bufio"
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -32,6 +33,7 @@ type CommitMessage struct {
 	DetectedStructs   []string
 	DetectedMethods   []string
 	ChangePatterns    []string
+	FullDiff          string
 }
 
 // Analyzer is responsible for analyzing git changes and generating commit message components
@@ -104,6 +106,15 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 	commitMessage.DetectedStructs = uniqueStrings(allStructs)
 	commitMessage.DetectedMethods = uniqueStrings(allMethods)
 	commitMessage.ChangePatterns = uniqueStrings(allPatterns)
+
+	// Collect summarized diff for AI
+	var diffSummary strings.Builder
+	for _, change := range a.changes {
+		diffSummary.WriteString(fmt.Sprintf("File: %s\n", change.File))
+		diffSummary.WriteString(a.summarizeDiff(change.Diff))
+		diffSummary.WriteString("\n")
+	}
+	commitMessage.FullDiff = diffSummary.String()
 
 	// Determine if changes are only documentation, config, or dependencies
 	commitMessage.IsDocsOnly = a.isDocsOnly()
@@ -1272,4 +1283,30 @@ func (a *Analyzer) calculateHistoryScope(commits []string) string {
 	}
 
 	return ""
+}
+
+// summarizeDiff extracts the most relevant lines from a diff to keep it concise for AI
+func (a *Analyzer) summarizeDiff(diff string) string {
+	var summary strings.Builder
+	scanner := bufio.NewScanner(strings.NewReader(diff))
+	lineCount := 0
+	maxLines := 20 // Limit lines per file to avoid context bloat
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Only include added/removed lines and hunk headers
+		if strings.HasPrefix(line, "+") || strings.HasPrefix(line, "-") || strings.HasPrefix(line, "@@") {
+			if strings.HasPrefix(line, "+++") || strings.HasPrefix(line, "---") {
+				continue
+			}
+			summary.WriteString(line)
+			summary.WriteString("\n")
+			lineCount++
+		}
+		if lineCount >= maxLines {
+			summary.WriteString("... (truncated)\n")
+			break
+		}
+	}
+	return summary.String()
 }
