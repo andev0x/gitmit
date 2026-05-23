@@ -19,6 +19,7 @@ type PromptContext struct {
 	CodeSymbols     []string
 	DependencyAlert string
 	DiffSummary     DiffSummary
+	DiffContent     string
 }
 
 // DiffSummary contains ratio of changes
@@ -70,6 +71,7 @@ func RenderPrompt(msg *analyzer.CommitMessage, projectType, branchName string) (
 		DiffSummary: DiffSummary{
 			Ratio: ratio,
 		},
+		DiffContent: msg.FullDiff,
 	}
 
 	var buf bytes.Buffer

@@ -104,6 +104,53 @@ Controls the threshold for the diff stat analysis algorithm. This ratio determin
 }
 ```
 
+### Normalized Scoring
+
+**`normalizeScoring`** (boolean, default: true)
+
+Enables normalized confidence weights for action selection. This algorithm reduces noise when multiple weak signals compete by calculating a weighted average instead of a raw additive score.
+
+**`signalWeights`** (object)
+
+Defines the confidence weights for different signal sources. Only used when `normalizeScoring` is `true`.
+
+**Default weights:**
+- `branch`: 0.35 (strongest signal)
+- `diffStat`: 0.25
+- `keywords`: 0.25
+- `patterns`: 0.15 (multi-file patterns)
+
+**Example:**
+```json
+{
+  "normalizeScoring": true,
+  "signalWeights": {
+    "branch": 0.5,
+    "diffStat": 0.2,
+    "keywords": 0.2,
+    "patterns": 0.1
+  }
+}
+```
+
+### Message Length Constraints
+
+**`maxSubjectLength`** (int, default: 50)
+
+Specifies the maximum character length for the first line (subject) of the commit message. If the generated or edited subject exceeds this limit, it will be automatically wrapped to the next line.
+
+**`maxBodyLength`** (int, default: 72)
+
+Specifies the maximum character length for each line in the body of the commit message. If the body text exceeds this limit, it will be wrapped at word boundaries.
+
+**Example:**
+```json
+{
+  "maxSubjectLength": 50,
+  "maxBodyLength": 72
+}
+```
+
 ### Topic Mappings
 
 **`topicMappings`** (object)

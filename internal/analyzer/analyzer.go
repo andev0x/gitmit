@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"bufio"
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -32,6 +33,7 @@ type CommitMessage struct {
 	DetectedStructs   []string
 	DetectedMethods   []string
 	ChangePatterns    []string
+	FullDiff          string
 }
 
 // Analyzer is responsible for analyzing git changes and generating commit message components
@@ -105,6 +107,15 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 	commitMessage.DetectedMethods = uniqueStrings(allMethods)
 	commitMessage.ChangePatterns = uniqueStrings(allPatterns)
 
+	// Collect summarized diff for AI
+	var diffSummary strings.Builder
+	for _, change := range a.changes {
+		diffSummary.WriteString(fmt.Sprintf("File: %s\n", change.File))
+		diffSummary.WriteString(a.summarizeDiff(change.Diff))
+		diffSummary.WriteString("\n")
+	}
+	commitMessage.FullDiff = diffSummary.String()
+
 	// Determine if changes are only documentation, config, or dependencies
 	commitMessage.IsDocsOnly = a.isDocsOnly()
 	commitMessage.IsConfigOnly = a.isConfigOnly()
@@ -115,62 +126,11 @@ func (a *Analyzer) AnalyzeChanges(totalAdded, totalRemoved int, branchName strin
 		return msg
 	}
 
-	// Initialize a score tracker for the action (type)
-	scoreMap := make(map[string]int)
-
-	// Step 1: Scan the Branch status
-	if branchName != "" {
-		branchAction, branchScope := a.parseBranchName(branchName)
-		if branchAction != "" {
-			scoreMap[branchAction] += 3
-		}
-		if branchScope != "" {
-			commitMessage.Scope = branchScope
-		}
-	}
-
-	// Step 2: Add weights from diff stat ratio
-	statAction := a.analyzeDiffStat(totalAdded, totalRemoved)
-	if statAction != "" {
-		scoreMap[statAction] += 2
-	}
-
-	// Step 3: Aggregate keyword scores
-	keywordScores := a.calculateKeywordScores()
-	for action, score := range keywordScores {
-		scoreMap[action] += score
-	}
-
-	// Step 4: Add weights from multi-file patterns
-	multiPatterns := a.detectMultiFilePatterns()
-	for _, p := range multiPatterns {
-		switch p {
-		case "feature-addition":
-			scoreMap["feat"] += 4
-		case "bug-fix-cascade":
-			scoreMap["fix"] += 4
-		case "refactor-sweep":
-			scoreMap["refactor"] += 3
-		case "test-suite-update":
-			scoreMap["test"] += 4
-		}
-	}
-
-	// Step 5: Select the recommended type with the highest accumulated score
-	bestAction := ""
-	maxScore := -1
-	for action, score := range scoreMap {
-		if score > maxScore {
-			maxScore = score
-			bestAction = action
-		}
-	}
-
-	if bestAction != "" {
-		commitMessage.Action = bestAction
+	// Determine the recommended action (type) using scoring
+	if a.config.NormalizeScoring {
+		commitMessage.Action = a.calculateNormalizedAction(totalAdded, totalRemoved, branchName, commitMessage)
 	} else {
-		// Fallback to default action determination if no signals
-		commitMessage.Action = a.determineAction(a.changes[0])
+		commitMessage.Action = a.calculateAdditiveAction(totalAdded, totalRemoved, branchName, commitMessage)
 	}
 
 	// Default analysis based on the first change if no specific fallback applies
@@ -1126,6 +1086,177 @@ func (a *Analyzer) analyzeHistoryScopes() string {
 	return a.calculateHistoryScope(commits)
 }
 
+// calculateAdditiveAction implements the legacy additive scoring logic
+func (a *Analyzer) calculateAdditiveAction(totalAdded, totalRemoved int, branchName string, commitMessage *CommitMessage) string {
+	scoreMap := make(map[string]int)
+
+	if branchName != "" {
+		branchAction, branchScope := a.parseBranchName(branchName)
+		if branchAction != "" {
+			scoreMap[branchAction] += 3
+		}
+		if branchScope != "" {
+			commitMessage.Scope = branchScope
+		}
+	}
+
+	statAction := a.analyzeDiffStat(totalAdded, totalRemoved)
+	if statAction != "" {
+		scoreMap[statAction] += 2
+	}
+
+	keywordScores := a.calculateKeywordScores()
+	for action, score := range keywordScores {
+		scoreMap[action] += score
+	}
+
+	multiPatterns := a.detectMultiFilePatterns()
+	for _, p := range multiPatterns {
+		switch p {
+		case "feature-addition":
+			scoreMap["feat"] += 4
+		case "bug-fix-cascade":
+			scoreMap["fix"] += 4
+		case "refactor-sweep":
+			scoreMap["refactor"] += 3
+		case "test-suite-update":
+			scoreMap["test"] += 4
+		}
+	}
+
+	bestAction := ""
+	maxScore := -1
+	for action, score := range scoreMap {
+		if score > maxScore {
+			maxScore = score
+			bestAction = action
+		}
+	}
+
+	if bestAction != "" {
+		return bestAction
+	}
+	return a.determineAction(a.changes[0])
+}
+
+// calculateNormalizedAction implements the new weighted average scoring logic
+func (a *Analyzer) calculateNormalizedAction(totalAdded, totalRemoved int, branchName string, commitMessage *CommitMessage) string {
+	signals := make(map[string]map[string]float64)
+	signals["branch"] = make(map[string]float64)
+	signals["diffStat"] = make(map[string]float64)
+	signals["keywords"] = make(map[string]float64)
+	signals["patterns"] = make(map[string]float64)
+
+	// 1. Branch signal (binary: 0 or 1)
+	if branchName != "" {
+		branchAction, branchScope := a.parseBranchName(branchName)
+		if branchAction != "" {
+			signals["branch"][branchAction] = 1.0
+		}
+		if branchScope != "" {
+			commitMessage.Scope = branchScope
+		}
+	}
+
+	// 2. Diff-stat signal (0-1 based on distance from thresholds)
+	ratio := 0.5
+	if totalAdded+totalRemoved > 0 {
+		ratio = float64(totalAdded) / float64(totalAdded+totalRemoved)
+	}
+
+	if ratio < 0.2 {
+		// Strong refactor signal
+		signals["diffStat"]["refactor"] = 1.0 - (ratio / 0.2)
+	} else if ratio > 0.8 {
+		// Strong feat signal if enough lines
+		if totalAdded > 30 {
+			signals["diffStat"]["feat"] = (ratio - 0.8) / 0.2
+		}
+	} else if ratio >= 0.3 && ratio <= 0.7 {
+		// Balanced: refactor/fix signal
+		// Max signal at 0.5
+		dist := ratio - 0.5
+		if dist < 0 {
+			dist = -dist
+		}
+		signals["diffStat"]["refactor"] = 1.0 - (dist / 0.2)
+	}
+
+	// 3. Keyword signal (min-max normalized per action relative to max score)
+	keywordScores := a.calculateKeywordScores()
+	maxKeywordScore := 0
+	for _, score := range keywordScores {
+		if score > maxKeywordScore {
+			maxKeywordScore = score
+		}
+	}
+	if maxKeywordScore > 0 {
+		for action, score := range keywordScores {
+			signals["keywords"][action] = float64(score) / float64(maxKeywordScore)
+		}
+	}
+
+	// 4. Multi-file pattern signal (binary: 0 or 1)
+	multiPatterns := a.detectMultiFilePatterns()
+	for _, p := range multiPatterns {
+		switch p {
+		case "feature-addition":
+			signals["patterns"]["feat"] = 1.0
+		case "bug-fix-cascade":
+			signals["patterns"]["fix"] = 1.0
+		case "refactor-sweep":
+			signals["patterns"]["refactor"] = 1.0
+		case "test-suite-update":
+			signals["patterns"]["test"] = 1.0
+		case "config-update":
+			signals["patterns"]["ci"] = 1.0
+		}
+	}
+
+	// Compute final weighted scores
+	finalScores := make(map[string]float64)
+	weights := a.config.SignalWeights
+	if weights == nil {
+		weights = map[string]float64{
+			"branch":   0.35,
+			"diffStat": 0.25,
+			"keywords": 0.25,
+			"patterns": 0.15,
+		}
+	}
+
+	allActions := make(map[string]bool)
+	for _, signalMap := range signals {
+		for action := range signalMap {
+			allActions[action] = true
+		}
+	}
+
+	bestAction := ""
+	maxFinalScore := -1.0
+
+	for action := range allActions {
+		score := 0.0
+		score += signals["branch"][action] * weights["branch"]
+		score += signals["diffStat"][action] * weights["diffStat"]
+		score += signals["keywords"][action] * weights["keywords"]
+		score += signals["patterns"][action] * weights["patterns"]
+		finalScores[action] = score
+
+		if score > maxFinalScore {
+			maxFinalScore = score
+			bestAction = action
+		}
+	}
+
+	// Fallback: If top action score is too low, use file-based heuristics
+	if maxFinalScore < 0.35 {
+		return a.determineAction(a.changes[0])
+	}
+
+	return bestAction
+}
+
 // calculateHistoryScope calculates the most frequent scope from a list of commit messages
 func (a *Analyzer) calculateHistoryScope(commits []string) string {
 	scopeCounts := make(map[string]int)
@@ -1152,4 +1283,30 @@ func (a *Analyzer) calculateHistoryScope(commits []string) string {
 	}
 
 	return ""
+}
+
+// summarizeDiff extracts the most relevant lines from a diff to keep it concise for AI
+func (a *Analyzer) summarizeDiff(diff string) string {
+	var summary strings.Builder
+	scanner := bufio.NewScanner(strings.NewReader(diff))
+	lineCount := 0
+	maxLines := 20 // Limit lines per file to avoid context bloat
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Only include added/removed lines and hunk headers
+		if strings.HasPrefix(line, "+") || strings.HasPrefix(line, "-") || strings.HasPrefix(line, "@@") {
+			if strings.HasPrefix(line, "+++") || strings.HasPrefix(line, "---") {
+				continue
+			}
+			summary.WriteString(line)
+			summary.WriteString("\n")
+			lineCount++
+		}
+		if lineCount >= maxLines {
+			summary.WriteString("... (truncated)\n")
+			break
+		}
+	}
+	return summary.String()
 }

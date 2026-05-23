@@ -92,7 +92,7 @@ func runPropose(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	f := formatter.NewFormatter()
+	f := formatter.NewFormatter(cfg.MaxSubjectLength, cfg.MaxBodyLength)
 
 	// Calculate Heuristic Suggestion (Always available)
 	heuristicMsg, err := templater.GetMessage(commitMessage)
@@ -112,7 +112,7 @@ func runPropose(cmd *cobra.Command, args []string) error {
 			client := ai.NewOllamaClient(cfg.Ollama)
 			aiResponse, err := client.Generate(prompt)
 			if err == nil && ai.IsValidCommitMessage(aiResponse) {
-				aiMsg = strings.TrimSpace(aiResponse)
+				aiMsg = f.FormatMessage(strings.TrimSpace(aiResponse), commitMessage.IsMajor)
 				usingAI = true
 				finalMessage = aiMsg
 			}
@@ -220,7 +220,7 @@ func runPropose(cmd *cobra.Command, args []string) error {
 				editedMessage = strings.TrimSpace(editedMessage)
 
 				if editedMessage != "" {
-					finalMessage = editedMessage
+					finalMessage = f.FormatMessage(editedMessage, commitMessage.IsMajor)
 					usedSuggestions[finalMessage] = true
 					color.Green("\n✓ Updated commit message:")
 				} else {
@@ -240,7 +240,7 @@ func runPropose(cmd *cobra.Command, args []string) error {
 						client := ai.NewOllamaClient(cfg.Ollama)
 						aiResponse, err := client.Generate(prompt)
 						if err == nil && ai.IsValidCommitMessage(aiResponse) {
-							finalMessage = strings.TrimSpace(aiResponse)
+							finalMessage = f.FormatMessage(strings.TrimSpace(aiResponse), commitMessage.IsMajor)
 							regenerationCount++
 						}
 					}
@@ -264,7 +264,7 @@ func runPropose(cmd *cobra.Command, args []string) error {
 					client := ai.NewOllamaClient(cfg.Ollama)
 					aiResponse, err := client.Generate(prompt)
 					if err == nil && ai.IsValidCommitMessage(aiResponse) {
-						aiMsg = strings.TrimSpace(aiResponse)
+						aiMsg = f.FormatMessage(strings.TrimSpace(aiResponse), commitMessage.IsMajor)
 						finalMessage = aiMsg
 						usingAI = true
 					} else {

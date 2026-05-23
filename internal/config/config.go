@@ -17,6 +17,10 @@ type Config struct {
 	Keywords          map[string]map[string]int    `json:"keywords"`          // action -> keyword -> score
 	Templates         map[string]map[string]string `json:"templates"`         // Custom templates
 	DiffStatThreshold float64                      `json:"diffStatThreshold"` // Threshold for add/delete ratio
+	NormalizeScoring  bool                         `json:"normalizeScoring"`  // Whether to use normalized confidence weights
+	SignalWeights     map[string]float64           `json:"signalWeights"`     // Weights for different signal sources
+	MaxSubjectLength  int                          `json:"maxSubjectLength"`  // Max length for the first line
+	MaxBodyLength     int                          `json:"maxBodyLength"`     // Max length for body lines
 }
 
 // OllamaConfig represents the structure of the ollama configuration block
@@ -41,6 +45,15 @@ func LoadConfig() (*Config, error) {
 		Keywords:          make(map[string]map[string]int),
 		Templates:         make(map[string]map[string]string),
 		DiffStatThreshold: 0.5,
+		NormalizeScoring:  true,
+		SignalWeights: map[string]float64{
+			"branch":   0.35,
+			"diffStat": 0.25,
+			"keywords": 0.25,
+			"patterns": 0.15,
+		},
+		MaxSubjectLength: 50,
+		MaxBodyLength:    72,
 	}
 
 	// 1. Try to load embedded default config (optional)
@@ -258,6 +271,36 @@ func mergeConfigFromFile(cfg *Config, path string) error {
 	// Diff stat threshold
 	if fileCfg.DiffStatThreshold > 0 {
 		cfg.DiffStatThreshold = fileCfg.DiffStatThreshold
+	}
+
+	// Normalize scoring
+	if data, err := os.ReadFile(path); err == nil {
+		var raw map[string]interface{}
+		if err := json.Unmarshal(data, &raw); err == nil {
+			if val, ok := raw["normalizeScoring"]; ok {
+				if b, ok := val.(bool); ok {
+					cfg.NormalizeScoring = b
+				}
+			}
+		}
+	}
+
+	// Signal weights
+	if fileCfg.SignalWeights != nil {
+		if cfg.SignalWeights == nil {
+			cfg.SignalWeights = make(map[string]float64)
+		}
+		for k, v := range fileCfg.SignalWeights {
+			cfg.SignalWeights[k] = v
+		}
+	}
+
+	// Message lengths
+	if fileCfg.MaxSubjectLength > 0 {
+		cfg.MaxSubjectLength = fileCfg.MaxSubjectLength
+	}
+	if fileCfg.MaxBodyLength > 0 {
+		cfg.MaxBodyLength = fileCfg.MaxBodyLength
 	}
 
 	return nil

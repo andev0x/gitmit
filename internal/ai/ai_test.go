@@ -44,6 +44,7 @@ func TestIsValidCommitMessage(t *testing.T) {
 		expected bool
 	}{
 		{"feat(auth): add login functionality", true},
+		{"feat(auth): add login\n\nThis is a body.", true},
 		{"fix: resolve memory leak", true},
 		{"chore(deps): update dependencies", true},
 		{"Invalid message", false},
