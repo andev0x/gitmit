@@ -18,6 +18,10 @@ Metadata Context:
 - Dependency Changes: {{.DependencyAlert}}
 - Added/Deleted Line Ratio: {{printf "%.2f" .DiffSummary.Ratio}}
 
+Recent Commit History (for style reference):
+{{range .RecentCommits}}- {{.}}
+{{end}}
+
 Summarized Git Diff:
 {{.DiffContent}}
 
