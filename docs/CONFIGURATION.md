@@ -104,6 +104,35 @@ Controls the threshold for the diff stat analysis algorithm. This ratio determin
 }
 ```
 
+### Normalized Scoring
+
+**`normalizeScoring`** (boolean, default: true)
+
+Enables normalized confidence weights for action selection. This algorithm reduces noise when multiple weak signals compete by calculating a weighted average instead of a raw additive score.
+
+**`signalWeights`** (object)
+
+Defines the confidence weights for different signal sources. Only used when `normalizeScoring` is `true`.
+
+**Default weights:**
+- `branch`: 0.35 (strongest signal)
+- `diffStat`: 0.25
+- `keywords`: 0.25
+- `patterns`: 0.15 (multi-file patterns)
+
+**Example:**
+```json
+{
+  "normalizeScoring": true,
+  "signalWeights": {
+    "branch": 0.5,
+    "diffStat": 0.2,
+    "keywords": 0.2,
+    "patterns": 0.1
+  }
+}
+```
+
 ### Topic Mappings
 
 **`topicMappings`** (object)
