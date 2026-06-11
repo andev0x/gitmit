@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	version = "1.0.1"
+	version = "1.0.6"
 	// Global flags
 	interactiveFlag bool
 	suggestionsFlag bool
