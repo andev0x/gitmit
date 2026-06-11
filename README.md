@@ -87,14 +87,14 @@ An advanced algorithm that aggregates signals from:
 To leverage the power of LLMs offline:
 
 1. **Install Ollama** from [ollama.com](https://ollama.com).
-2. **Pull a model**: `ollama pull qwen2.5-coder:3b`
+2. **Pull a model**: `ollama pull qwen2.5-coder:7b`
 3. **Initialize Gitmit config**: `gitmit init`
 4. **Enable AI** in `.gitmit.json`:
    ```json
    {
      "engine": "ollama",
      "ollama": {
-       "model": "qwen2.5-coder:3b"
+       "model": "qwen2.5-coder:7b"
      }
    }
    ```
