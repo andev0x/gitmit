@@ -9,8 +9,8 @@ import (
 
 // Config represents the structure of .gitmit.json
 type Config struct {
-	Engine            string                       `json:"engine"`            // heuristic or ollama
-	Ollama            OllamaConfig                 `json:"ollama"`            // Ollama specific config
+	Engine            string                       `json:"engine"` // heuristic or ollama
+	Ollama            OllamaConfig                 `json:"ollama"` // Ollama specific config
 	TopicMappings     map[string]string            `json:"topicMappings"`
 	KeywordMappings   map[string]string            `json:"keywordMappings"`
 	ProjectType       string                       `json:"projectType"`       // go, nodejs, python, etc.
@@ -36,7 +36,7 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		Engine: "heuristic",
 		Ollama: OllamaConfig{
-			Model:       "qwen2.5-coder:3b",
+			Model:       "qwen2.5-coder:7b",
 			URL:         "http://localhost:11434",
 			Temperature: 0.2,
 		},
